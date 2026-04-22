@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -36,11 +37,16 @@ export function Sidebar() {
   return (
     <aside className="flex w-64 flex-col gap-6 bg-sidebar p-5 text-sidebar-foreground">
       <div>
-        <div className="text-lg font-semibold">
-          ZLT <span className="text-primary">Marketing CRM</span>
-        </div>
-        <div className="mt-1 text-xs text-sidebar-foreground/60">
-          Contactos unificados + touchpoints
+        <Image
+          src="/logo.png"
+          alt="ZLT Desarrollos"
+          width={239}
+          height={160}
+          priority
+          className="h-10 w-auto"
+        />
+        <div className="mt-3 text-xs uppercase tracking-[0.2em] text-sidebar-foreground/60">
+          Marketing CRM
         </div>
       </div>
 

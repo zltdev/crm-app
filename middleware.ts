@@ -6,7 +6,9 @@ const PUBLIC_PATHS = new Set(["/login"]);
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Rutas públicas y assets de _next ya están filtrados por `config.matcher`.
+  // Cualquier request a un archivo (logo.png, robots.txt, etc.) pasa sin auth.
+  if (pathname.includes(".")) return NextResponse.next();
+
   if (PUBLIC_PATHS.has(pathname)) {
     return NextResponse.next();
   }
@@ -26,8 +28,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    // Todo excepto archivos estáticos, favicon, robots y el endpoint de login.
-    "/((?!_next/static|_next/image|favicon.ico|robots.txt|logo.svg).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

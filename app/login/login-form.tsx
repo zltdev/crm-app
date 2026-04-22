@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { Loader2, Lock } from "lucide-react";
@@ -16,15 +17,17 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#0f172a] via-[#0b1220] to-[#020617] p-6">
       <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-3">
-          <Logo />
-          <div className="text-center">
-            <div className="text-xl font-semibold text-white">
-              ZLT Desarrollos
-            </div>
-            <div className="text-xs uppercase tracking-[0.25em] text-white/50">
-              Marketing CRM
-            </div>
+        <div className="mb-8 flex flex-col items-center gap-4">
+          <Image
+            src="/logo.png"
+            alt="ZLT Desarrollos"
+            width={239}
+            height={160}
+            priority
+            className="h-20 w-auto"
+          />
+          <div className="text-xs uppercase tracking-[0.25em] text-white/50">
+            Marketing CRM
           </div>
         </div>
 
@@ -85,13 +88,3 @@ function SubmitButton() {
   );
 }
 
-function Logo() {
-  return (
-    <div className="relative">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-sky-600 shadow-lg shadow-primary/30">
-        <span className="text-lg font-bold tracking-tight text-white">ZLT</span>
-      </div>
-      <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-[#0f172a]" />
-    </div>
-  );
-}
