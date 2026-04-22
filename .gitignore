@@ -1,0 +1,31 @@
+# deps
+node_modules
+.pnpm-store
+
+# next
+.next
+next-env.d.ts
+out
+
+# env
+.env
+.env.local
+.env.*.local
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# editor / os
+.DS_Store
+Thumbs.db
+*Zone.Identifier
+.vscode
+.idea
+.claude
+
+# misc
+.codex
+.vercel
+*.tsbuildinfo

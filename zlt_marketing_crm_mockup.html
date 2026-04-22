@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZLT Marketing CRM Mockup</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Arial, sans-serif;
+      background: #f5f7fb;
+      color: #1f2937;
+    }
+    .app {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100vh;
+    }
+    .sidebar {
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 24px 18px;
+    }
+    .brand {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 24px;
+    }
+    .brand span { color: #38bdf8; }
+    .nav-group { margin-bottom: 22px; }
+    .nav-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #94a3b8;
+      margin: 0 0 10px 10px;
+    }
+    .nav-btn {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: #e5e7eb;
+      text-align: left;
+      padding: 12px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+    .nav-btn:hover, .nav-btn.active { background: #1e293b; }
+    .main {
+      padding: 28px;
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 22px;
+      gap: 16px;
+    }
+    .title h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+    .title p {
+      margin: 6px 0 0;
+      color: #64748b;
+    }
+    .search {
+      background: white;
+      border: 1px solid #e2e8f0;
+      padding: 12px 14px;
+      border-radius: 14px;
+      min-width: 320px;
+      color: #64748b;
+    }
+    .page { display: none; }
+    .page.active { display: block; }
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr .8fr;
+      gap: 16px;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 16px;
+    }
+    .card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, .05);
+    }
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+    .muted { color: #64748b; }
+    .stat {
+      font-size: 28px;
+      font-weight: 700;
+      margin-top: 10px;
+    }
+    .pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+    .pill.green { background: #dcfce7; color: #166534; }
+    .pill.orange { background: #ffedd5; color: #9a3412; }
+    .pill.gray { background: #e5e7eb; color: #374151; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th, td {
+      text-align: left;
+      padding: 12px 10px;
+      border-bottom: 1px solid #eef2f7;
+      vertical-align: top;
+    }
+    th { color: #64748b; font-size: 12px; text-transform: uppercase; }
+    .timeline {
+      position: relative;
+      margin-top: 10px;
+      padding-left: 22px;
+    }
+    .timeline:before {
+      content: "";
+      position: absolute;
+      left: 7px;
+      top: 6px;
+      bottom: 6px;
+      width: 2px;
+      background: #dbeafe;
+    }
+    .event {
+      position: relative;
+      margin-bottom: 18px;
+      padding: 2px 0 0 12px;
+    }
+    .event:before {
+      content: "";
+      position: absolute;
+      left: -2px;
+      top: 8px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #0ea5e9;
+      box-shadow: 0 0 0 4px #e0f2fe;
+    }
+    .event h4 {
+      margin: 0 0 4px;
+      font-size: 14px;
+    }
+    .event p {
+      margin: 0;
+      color: #64748b;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .contact-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: start;
+      margin-bottom: 18px;
+    }
+    .contact-name {
+      font-size: 28px;
+      margin: 0 0 6px;
+    }
+    .meta-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .mini {
+      padding: 10px 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 13px;
+    }
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .list-item {
+      padding: 14px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+    }
+    .footer-note {
+      margin-top: 16px;
+      font-size: 12px;
+      color: #64748b;
+    }
+    @media (max-width: 1100px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+      .search { min-width: auto; width: 100%; }
+      .topbar { flex-direction: column; align-items: stretch; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">ZLT <span>Marketing CRM</span></div>
+
+      <div class="nav-group">
+        <div class="nav-title">Navegación</div>
+        <button class="nav-btn active" data-page="dashboard">Dashboard</button>
+        <button class="nav-btn" data-page="contacts">Contactos</button>
+        <button class="nav-btn" data-page="contact-detail">Ficha del contacto</button>
+        <button class="nav-btn" data-page="campaigns">Campañas</button>
+        <button class="nav-btn" data-page="segments">Segmentos & nutrición</button>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-title">Idea principal</div>
+        <div class="mini" style="background:#111827;color:#cbd5e1;border-color:#1f2937;">
+          Un contacto único puede tener muchos <b>touchpoints</b>: formulario, evento, llamada, WhatsApp, agente o carga manual.
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="title">
+          <h1>Mockup estático</h1>
+          <p>Ejemplo simple para mostrar la idea del sistema de marketing y CRM de ZLT.</p>
+        </div>
+        <div class="search">Buscar contacto, campaña o evento…</div>
+      </div>
+
+      <section class="page active" id="dashboard">
+        <div class="grid-4">
+          <div class="card">
+            <div class="muted">Contactos unificados</div>
+            <div class="stat">4.286</div>
+            <div class="footer-note">Base consolidada entre formularios, eventos, llamadas y agente.</div>
+          </div>
+          <div class="card">
+            <div class="muted">Nuevos esta semana</div>
+            <div class="stat">184</div>
+            <div class="footer-note">+27% vs semana anterior.</div>
+          </div>
+          <div class="card">
+            <div class="muted">Con score alto</div>
+            <div class="stat">61</div>
+            <div class="footer-note">Listos para seguimiento comercial.</div>
+          </div>
+          <div class="card">
+            <div class="muted">Automatizaciones activas</div>
+            <div class="stat">7</div>
+            <div class="footer-note">Secuencias de nutrición por WhatsApp y email.</div>
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <div class="card">
+            <h3>Últimos ingresos de contactos</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Contacto</th>
+                  <th>Origen</th>
+                  <th>Canal</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><b>María Gómez</b><br><span class="muted">+54 9 341 555 1122</span></td>
+                  <td>Campaña Meta · Formulario obra nueva</td>
+                  <td>WhatsApp</td>
+                  <td><span class="pill">Nuevo</span></td>
+                </tr>
+                <tr>
+                  <td><b>Lucas Pérez</b><br><span class="muted">lucas@empresa.com</span></td>
+                  <td>Expo Oil & Gas 2026</td>
+                  <td>Evento</td>
+                  <td><span class="pill orange">Nutrición</span></td>
+                </tr>
+                <tr>
+                  <td><b>Carla Ruiz</b><br><span class="muted">+54 9 299 444 1200</span></td>
+                  <td>Llamada inbound</td>
+                  <td>Teléfono</td>
+                  <td><span class="pill green">Calificado</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card">
+            <h3>Origen de touchpoints</h3>
+            <div class="list">
+              <div class="list-item"><b>Formularios</b><br><span class="muted">42% del total</span></div>
+              <div class="list-item"><b>Eventos / expos</b><br><span class="muted">21% del total</span></div>
+              <div class="list-item"><b>Agente Lead Manager</b><br><span class="muted">19% del total</span></div>
+              <div class="list-item"><b>Llamadas</b><br><span class="muted">11% del total</span></div>
+              <div class="list-item"><b>Carga manual / referidos</b><br><span class="muted">8% del total</span></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Acciones sugeridas</h3>
+            <div class="list">
+              <div class="list-item"><b>61 contactos</b><br><span class="muted">Asignar al equipo comercial hoy.</span></div>
+              <div class="list-item"><b>84 asistentes a evento</b><br><span class="muted">Enviar secuencia post-evento.</span></div>
+              <div class="list-item"><b>129 leads fríos</b><br><span class="muted">Reactivar con pieza de valor.</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="contacts">
+        <div class="card">
+          <h3>Base de contactos</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Teléfono</th>
+                <th>Email</th>
+                <th>Touchpoints</th>
+                <th>Último origen</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>María Gómez</b></td>
+                <td>+54 9 341 555 1122</td>
+                <td>maria.gomez@email.com</td>
+                <td>4</td>
+                <td>Lead Manager · WhatsApp</td>
+                <td><span class="pill green">82</span></td>
+              </tr>
+              <tr>
+                <td><b>Lucas Pérez</b></td>
+                <td>+54 9 299 555 7788</td>
+                <td>lucas@empresa.com</td>
+                <td>2</td>
+                <td>Expo Oil & Gas</td>
+                <td><span class="pill orange">58</span></td>
+              </tr>
+              <tr>
+                <td><b>Carla Ruiz</b></td>
+                <td>+54 9 299 444 1200</td>
+                <td>-</td>
+                <td>3</td>
+                <td>Llamada inbound</td>
+                <td><span class="pill green">75</span></td>
+              </tr>
+              <tr>
+                <td><b>Javier Torres</b></td>
+                <td>+54 9 341 777 1456</td>
+                <td>jtorres@gmail.com</td>
+                <td>1</td>
+                <td>Formulario landing</td>
+                <td><span class="pill gray">32</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="footer-note">Acá se ve la idea de contacto unificado. Una sola persona, múltiples orígenes y múltiples interacciones.</div>
+        </div>
+      </section>
+
+      <section class="page" id="contact-detail">
+        <div class="card">
+          <div class="contact-header">
+            <div>
+              <div class="muted">Ficha de contacto</div>
+              <h2 class="contact-name">María Gómez</h2>
+              <div class="muted">+54 9 341 555 1122 · maria.gomez@email.com</div>
+              <div class="meta-row">
+                <span class="pill green">Score 82</span>
+                <span class="pill">Hot lead</span>
+                <span class="pill orange">En nutrición</span>
+              </div>
+            </div>
+            <div class="mini">
+              <b>Fuente original</b><br>
+              Campaña Meta Ads · Formulario “Invertir en Añelo”
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-top:16px;">
+          <div class="card">
+            <h3>Historial de touchpoints</h3>
+            <div class="timeline">
+              <div class="event">
+                <h4>Formulario completado · Meta Ads</h4>
+                <p>12 mar 2026 · Campaña “Invertir en Añelo” · Landing con formulario de consulta.</p>
+              </div>
+              <div class="event">
+                <h4>Conversación con Lead Manager</h4>
+                <p>13 mar 2026 · WhatsApp · El agente identificó interés en lotes y pidió seguimiento humano.</p>
+              </div>
+              <div class="event">
+                <h4>Asistencia a evento presencial</h4>
+                <p>18 mar 2026 · Evento “Presentación proyecto” · Check-in registrado por QR.</p>
+              </div>
+              <div class="event">
+                <h4>Llamada comercial realizada</h4>
+                <p>20 mar 2026 · Ejecutivo: Juan López · Resultado: interesada, pendiente de envío de brochure.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Resumen comercial</h3>
+            <div class="list">
+              <div class="list-item"><b>Estado actual</b><br><span class="muted">Interesada · seguimiento activo</span></div>
+              <div class="list-item"><b>Canal preferido</b><br><span class="muted">WhatsApp</span></div>
+              <div class="list-item"><b>Próxima acción</b><br><span class="muted">Enviar brochure + agendar llamada</span></div>
+              <div class="list-item"><b>Tags</b><br><span class="muted">Añelo · inversión · evento marzo</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="campaigns">
+        <div class="grid-2">
+          <div class="card">
+            <h3>Campañas activas</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Campaña</th>
+                  <th>Plataforma</th>
+                  <th>Contactos</th>
+                  <th>Calificados</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><b>Invertir en Añelo</b></td>
+                  <td>Meta Ads</td>
+                  <td>112</td>
+                  <td>26</td>
+                </tr>
+                <tr>
+                  <td><b>Expo Oil & Gas</b></td>
+                  <td>Evento</td>
+                  <td>73</td>
+                  <td>18</td>
+                </tr>
+                <tr>
+                  <td><b>Lead Magnet brochure</b></td>
+                  <td>Landing / Email</td>
+                  <td>49</td>
+                  <td>7</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card">
+            <h3>Cómo se conecta con contactos</h3>
+            <div class="list">
+              <div class="list-item"><b>Campaña</b><br><span class="muted">Define el esfuerzo de captación.</span></div>
+              <div class="list-item"><b>Formulario / evento</b><br><span class="muted">Genera registros específicos.</span></div>
+              <div class="list-item"><b>Touchpoint</b><br><span class="muted">Vincula ese origen con un contacto unificado.</span></div>
+              <div class="list-item"><b>Score + automatización</b><br><span class="muted">Dispara nutrición o seguimiento humano.</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="segments">
+        <div class="grid-2">
+          <div class="card">
+            <h3>Segmentos</h3>
+            <div class="list">
+              <div class="list-item"><b>Asistieron a evento + no tuvieron llamada</b><br><span class="muted">84 contactos</span></div>
+              <div class="list-item"><b>Score mayor a 70</b><br><span class="muted">61 contactos</span></div>
+              <div class="list-item"><b>Entraron por formulario hace menos de 7 días</b><br><span class="muted">97 contactos</span></div>
+              <div class="list-item"><b>Leads fríos para recalentamiento</b><br><span class="muted">129 contactos</span></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Secuencia de nutrición ejemplo</h3>
+            <div class="timeline">
+              <div class="event">
+                <h4>Día 0 · envío inicial</h4>
+                <p>WhatsApp con brochure y propuesta de valor.</p>
+              </div>
+              <div class="event">
+                <h4>Día 3 · seguimiento</h4>
+                <p>Email con caso de uso o testimonio.</p>
+              </div>
+              <div class="event">
+                <h4>Día 6 · scoring</h4>
+                <p>Si abrió o respondió, sumar puntos y derivar a comercial.</p>
+              </div>
+              <div class="event">
+                <h4>Día 10 · cierre automático</h4>
+                <p>Si no hubo interacción, mover a segmento de recalentamiento.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const buttons = document.querySelectorAll('.nav-btn');
+    const pages = document.querySelectorAll('.page');
+
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        buttons.forEach(b => b.classList.remove('active'));
+        pages.forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.page).classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
