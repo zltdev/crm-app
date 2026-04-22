@@ -25,10 +25,10 @@ type NavItem = {
 const navItems: NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/contactos", label: "Contactos", icon: Users },
+  { href: "/importar", label: "Importar", icon: Upload },
   { href: "/campanas", label: "Campañas", icon: Megaphone, disabled: true },
   { href: "/eventos", label: "Eventos", icon: CalendarDays, disabled: true },
   { href: "/segmentos", label: "Segmentos", icon: Tags, disabled: true },
-  { href: "/importar", label: "Importar", icon: Upload, disabled: true },
 ];
 
 export function Sidebar() {

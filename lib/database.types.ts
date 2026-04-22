@@ -281,7 +281,9 @@ export type Database = {
       }
       contact_touchpoints: {
         Row: {
+          agent_conversation_id: string | null
           campaign_id: string | null
+          communication_id: string | null
           contact_id: string
           created_at: string
           event_id: string | null
@@ -290,11 +292,14 @@ export type Database = {
           id: string
           metadata: Json
           occurred_at: string
+          phone_call_id: string | null
           source_name: string | null
           source_type: string
         }
         Insert: {
+          agent_conversation_id?: string | null
           campaign_id?: string | null
+          communication_id?: string | null
           contact_id: string
           created_at?: string
           event_id?: string | null
@@ -303,11 +308,14 @@ export type Database = {
           id?: string
           metadata?: Json
           occurred_at?: string
+          phone_call_id?: string | null
           source_name?: string | null
           source_type: string
         }
         Update: {
+          agent_conversation_id?: string | null
           campaign_id?: string | null
+          communication_id?: string | null
           contact_id?: string
           created_at?: string
           event_id?: string | null
@@ -316,6 +324,7 @@ export type Database = {
           id?: string
           metadata?: Json
           occurred_at?: string
+          phone_call_id?: string | null
           source_name?: string | null
           source_type?: string
         }
@@ -617,33 +626,60 @@ export type Database = {
       }
       import_batches: {
         Row: {
+          column_mapping: Json | null
+          context_campaign_id: string | null
+          context_event_id: string | null
+          context_expo_id: string | null
+          context_form_id: string | null
           created_at: string
           file_name: string
+          header_row: number
           id: string
           processed_at: string | null
+          result_stats: Json | null
           row_count: number | null
+          sheet_name: string | null
+          source_kind: string | null
           source_name: string
           source_type: string
           status: string
           uploaded_at: string
         }
         Insert: {
+          column_mapping?: Json | null
+          context_campaign_id?: string | null
+          context_event_id?: string | null
+          context_expo_id?: string | null
+          context_form_id?: string | null
           created_at?: string
           file_name: string
+          header_row?: number
           id?: string
           processed_at?: string | null
+          result_stats?: Json | null
           row_count?: number | null
+          sheet_name?: string | null
+          source_kind?: string | null
           source_name: string
           source_type: string
           status?: string
           uploaded_at?: string
         }
         Update: {
+          column_mapping?: Json | null
+          context_campaign_id?: string | null
+          context_event_id?: string | null
+          context_expo_id?: string | null
+          context_form_id?: string | null
           created_at?: string
           file_name?: string
+          header_row?: number
           id?: string
           processed_at?: string | null
+          result_stats?: Json | null
           row_count?: number | null
+          sheet_name?: string | null
+          source_kind?: string | null
           source_name?: string
           source_type?: string
           status?: string
