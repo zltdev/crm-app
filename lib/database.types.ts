@@ -18,6 +18,7 @@ export type Database = {
           campaign_id: string | null
           channel: string
           contact_id: string
+          conversation_id: string | null
           created_at: string
           ended_at: string | null
           id: string
@@ -29,6 +30,7 @@ export type Database = {
           campaign_id?: string | null
           channel: string
           contact_id: string
+          conversation_id?: string | null
           created_at?: string
           ended_at?: string | null
           id?: string
@@ -40,6 +42,7 @@ export type Database = {
           campaign_id?: string | null
           channel?: string
           contact_id?: string
+          conversation_id?: string | null
           created_at?: string
           ended_at?: string | null
           id?: string

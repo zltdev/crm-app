@@ -3,9 +3,19 @@ import type { ColumnMapping, SourceKind, TargetKind } from "./types";
 type SynonymEntry = { target: TargetKind; keywords: string[] };
 
 // Sinónimos canónicos. Todo en lowercase, sin acentos normalizados para matching.
+// Columnas cuyo nombre normalizado = estas keys se envían siempre a metadata
+// con una semántica pre-definida. Evita, p.ej., que "id" matchee con "wa_id".
+const FORCED_METADATA: Record<string, string> = {
+  id: "external_id",
+  external_id: "external_id",
+  source_id: "external_id",
+};
+
 const BASE_SYNONYMS: SynonymEntry[] = [
   {
     target: "contact_phone",
+    // Ojo: dejamos sinónimos que funcionan a nivel "palabra completa" para
+    // que `id` no matchee con `wa_id`.
     keywords: [
       "phone",
       "phone_number",
@@ -14,13 +24,12 @@ const BASE_SYNONYMS: SynonymEntry[] = [
       "celular",
       "movil",
       "whatsapp",
-      "wa",
       "wa_id",
     ],
   },
   {
     target: "contact_email",
-    keywords: ["email", "mail", "correo", "e-mail", "e_mail", "emailaddress"],
+    keywords: ["email", "mail", "correo", "e_mail", "emailaddress"],
   },
   {
     target: "contact_first_name",
@@ -32,7 +41,13 @@ const BASE_SYNONYMS: SynonymEntry[] = [
   },
   {
     target: "contact_full_name",
-    keywords: ["name", "full_name", "nombre completo", "nombre_completo", "fullname"],
+    keywords: [
+      "name",
+      "full_name",
+      "nombre_completo",
+      "fullname",
+      "contact_name",
+    ],
   },
   {
     target: "touchpoint_occurred_at",
@@ -43,7 +58,6 @@ const BASE_SYNONYMS: SynonymEntry[] = [
       "created_at",
       "fecha",
       "fecha_contacto",
-      "fecha contacto",
       "date",
       "timestamp",
       "submitted_at",
@@ -66,6 +80,10 @@ const SATELLITE_SYNONYMS: Record<
   { field: string; keywords: string[] }[]
 > = {
   agent: [
+    {
+      field: "conversation_id",
+      keywords: ["conversation_id", "conv_id", "session_id", "thread_id"],
+    },
     { field: "agent_name", keywords: ["agent_name", "agente", "agent"] },
     { field: "channel", keywords: ["channel", "canal", "medio"] },
     { field: "started_at", keywords: ["started_at", "inicio"] },
@@ -126,6 +144,15 @@ export function autoMapColumns(
   return headers.map<ColumnMapping>((header) => {
     const h = normalize(header);
 
+    // 0) Forced metadata: `id` siempre va a metadata.external_id, no a phone.
+    if (FORCED_METADATA[h]) {
+      return {
+        column: header,
+        target: "metadata",
+        metadataKey: FORCED_METADATA[h],
+      };
+    }
+
     // 1) Match contra sinónimos base (campos de contacto + touchpoint)
     for (const entry of BASE_SYNONYMS) {
       if (used.has(entry.target)) continue;
@@ -173,7 +200,12 @@ export function autoMapColumns(
 function matches(header: string, keyword: string): boolean {
   const k = normalize(keyword);
   if (header === k) return true;
-  // matcheo por inclusión tanto en el header como en la keyword, para capturar
-  // "fecha_de_contacto" ~ "fecha" y "phone_number" ~ "phone".
-  return header.includes(k) || k.includes(header);
+  // Match a nivel de palabra (split por guion bajo), no por inclusión de
+  // substring — así `id` no matchea con `wa_id` y `mail` no matchea con
+  // `email` erróneamente.
+  const parts = header.split("_");
+  if (parts.includes(k)) return true;
+  const kParts = k.split("_");
+  if (kParts.length > 1 && kParts.every((p) => parts.includes(p))) return true;
+  return false;
 }

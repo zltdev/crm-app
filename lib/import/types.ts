@@ -36,7 +36,12 @@ export type TargetKind =
 // Campos específicos por cada tabla satélite (cuando target=satellite_field).
 // Solo listamos los "first-class" — el resto de lo que no mapea acá debe ir a metadata.
 export type SatelliteFieldByKind = {
-  agent: "agent_name" | "channel" | "started_at" | "ended_at";
+  agent:
+    | "agent_name"
+    | "channel"
+    | "started_at"
+    | "ended_at"
+    | "conversation_id";
   form: "submitted_at";
   event: "attendance_status" | "lead_source" | "checked_in_at";
   expo: "stand" | "sales_rep" | "interaction_result";
@@ -84,6 +89,7 @@ export const SATELLITE_FIELDS: Record<
   { value: string; label: string }[]
 > = {
   agent: [
+    { value: "conversation_id", label: "ID de conversación (externo)" },
     { value: "agent_name", label: "Nombre del agente" },
     { value: "channel", label: "Canal (whatsapp, web, email, sms, other)" },
     { value: "started_at", label: "Inicio de conversación" },

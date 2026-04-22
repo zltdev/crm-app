@@ -245,11 +245,16 @@ async function createSatellite(
   if (ctx.sourceKind === "agent") {
     const channel =
       typeof satellite.channel === "string" ? satellite.channel : "whatsapp";
+    const conversationId =
+      satellite.conversation_id != null
+        ? String(satellite.conversation_id)
+        : null;
     const { data, error } = await admin
       .from("agent_conversations")
       .insert({
         contact_id: contactId,
         channel,
+        conversation_id: conversationId,
         agent_name:
           typeof satellite.agent_name === "string"
             ? satellite.agent_name
