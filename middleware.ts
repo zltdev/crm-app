@@ -1,42 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 
-const BASIC_AUTH_USER = process.env.APP_BASIC_AUTH_USER ?? "zlt";
-const BASIC_AUTH_PASSWORD = process.env.APP_BASIC_AUTH_PASSWORD ?? "";
+const PUBLIC_PATHS = new Set(["/login"]);
 
-function unauthorized() {
-  return new NextResponse("Authentication required", {
-    status: 401,
-    headers: { "WWW-Authenticate": 'Basic realm="ZLT CRM"' },
-  });
-}
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-export function middleware(req: NextRequest) {
-  if (!BASIC_AUTH_PASSWORD) {
+  // Rutas públicas y assets de _next ya están filtrados por `config.matcher`.
+  if (PUBLIC_PATHS.has(pathname)) {
     return NextResponse.next();
   }
 
-  const header = req.headers.get("authorization");
-  if (!header?.startsWith("Basic ")) {
-    return unauthorized();
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  const secret = process.env.APP_SESSION_SECRET;
+  const check = await verifySessionToken(token, secret);
+
+  if (!check.ok) {
+    const loginUrl = req.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.searchParams.set("next", pathname + req.nextUrl.search);
+    return NextResponse.redirect(loginUrl);
   }
 
-  try {
-    const decoded = atob(header.slice("Basic ".length));
-    const sepIndex = decoded.indexOf(":");
-    if (sepIndex === -1) return unauthorized();
-    const user = decoded.slice(0, sepIndex);
-    const pass = decoded.slice(sepIndex + 1);
-
-    if (user === BASIC_AUTH_USER && pass === BASIC_AUTH_PASSWORD) {
-      return NextResponse.next();
-    }
-  } catch {
-    return unauthorized();
-  }
-
-  return unauthorized();
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|robots.txt).*)"],
+  matcher: [
+    // Todo excepto archivos estáticos, favicon, robots y el endpoint de login.
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|logo.svg).*)",
+  ],
 };

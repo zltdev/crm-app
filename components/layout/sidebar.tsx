@@ -9,8 +9,10 @@ import {
   CalendarDays,
   Upload,
   Tags,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { logoutAction } from "@/app/login/actions";
 
 type NavItem = {
   href: string;
@@ -81,9 +83,20 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-auto rounded-lg bg-sidebar-accent/60 p-3 text-xs text-sidebar-foreground/70">
-        Un contacto único puede tener múltiples <b>touchpoints</b>: formulario,
-        evento, llamada, WhatsApp, agente o carga manual.
+      <div className="mt-auto flex flex-col gap-3">
+        <div className="rounded-lg bg-sidebar-accent/60 p-3 text-xs text-sidebar-foreground/70">
+          Un contacto único puede tener múltiples <b>touchpoints</b>:
+          formulario, evento, llamada, WhatsApp, agente o carga manual.
+        </div>
+        <form action={logoutAction}>
+          <button
+            type="submit"
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          >
+            <LogOut className="h-4 w-4" />
+            Cerrar sesión
+          </button>
+        </form>
       </div>
     </aside>
   );

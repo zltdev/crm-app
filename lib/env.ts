@@ -15,8 +15,9 @@ export const env = {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
   ),
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-  basicAuthUser: process.env.APP_BASIC_AUTH_USER ?? "zlt",
-  basicAuthPassword: process.env.APP_BASIC_AUTH_PASSWORD ?? "",
+  appPassword:
+    process.env.APP_PASSWORD ?? process.env.APP_BASIC_AUTH_PASSWORD ?? "",
+  sessionSecret: process.env.APP_SESSION_SECRET ?? "",
 };
 
 export function requireServiceRole(): string {
