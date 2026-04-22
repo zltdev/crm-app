@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, Pencil } from "lucide-react";
+import { ChevronLeft, Pencil, Plus } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -79,13 +79,22 @@ export default async function ContactDetailPage({
               )}
             </div>
           </div>
-          <Link
-            href={`/contactos/${contact.id}/editar`}
-            className={buttonVariants({ variant: "outline", size: "sm" })}
-          >
-            <Pencil className="h-4 w-4" />
-            Editar
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/touchpoints/nuevo?contact=${contact.id}`}
+              className={buttonVariants({ size: "sm" })}
+            >
+              <Plus className="h-4 w-4" />
+              Touchpoint
+            </Link>
+            <Link
+              href={`/contactos/${contact.id}/editar`}
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              <Pencil className="h-4 w-4" />
+              Editar
+            </Link>
+          </div>
         </CardHeader>
         <CardContent>
           <dl className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm md:grid-cols-2">
@@ -122,12 +131,21 @@ export default async function ContactDetailPage({
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Historial de touchpoints</CardTitle>
-          <CardDescription>
-            Todas las interacciones y apariciones del contacto, ordenadas de
-            más recientes a más antiguas.
-          </CardDescription>
+        <CardHeader className="flex-row items-start justify-between">
+          <div>
+            <CardTitle>Historial de touchpoints</CardTitle>
+            <CardDescription>
+              Todas las interacciones y apariciones del contacto, ordenadas de
+              más recientes a más antiguas.
+            </CardDescription>
+          </div>
+          <Link
+            href={`/touchpoints/nuevo?contact=${contact.id}`}
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            <Plus className="h-4 w-4" />
+            Agregar
+          </Link>
         </CardHeader>
         <CardContent>
           {touchpoints.length === 0 ? (
