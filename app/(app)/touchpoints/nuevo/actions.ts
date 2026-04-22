@@ -5,20 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { Json } from "@/lib/database.types";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-
-export const TOUCHPOINT_SOURCE_TYPES = [
-  "form",
-  "event",
-  "expo",
-  "phone_call",
-  "whatsapp",
-  "email",
-  "agent",
-  "manual",
-  "referral",
-  "import",
-  "other",
-] as const;
+import { TOUCHPOINT_SOURCE_TYPES } from "./constants";
 
 const Schema = z.object({
   contact_id: z.string().uuid(),

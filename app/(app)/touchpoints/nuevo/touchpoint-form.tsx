@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Loader2, Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -13,32 +13,16 @@ import type { ContactSearchResult } from "./search-contacts";
 import {
   createTouchpointAction,
   type CreateTouchpointState,
-  TOUCHPOINT_SOURCE_TYPES,
 } from "./actions";
-
-const SOURCE_LABELS: Record<(typeof TOUCHPOINT_SOURCE_TYPES)[number], string> = {
-  form: "Formulario",
-  event: "Evento",
-  expo: "Expo / feria",
-  phone_call: "Llamada telefónica",
-  whatsapp: "WhatsApp",
-  email: "Email",
-  agent: "Agente / bot",
-  referral: "Referido",
-  manual: "Carga manual",
-  import: "Importación",
-  other: "Otro",
-};
+import {
+  SOURCE_LABELS,
+  TOUCHPOINT_SOURCE_TYPES,
+  type TouchpointSourceType,
+} from "./constants";
 
 type Option = { id: string; label: string };
 
 const INITIAL: CreateTouchpointState = {};
-
-function defaultNowLocal() {
-  const now = new Date();
-  const tzOffsetMs = now.getTimezoneOffset() * 60 * 1000;
-  return new Date(now.getTime() - tzOffsetMs).toISOString().slice(0, 16);
-}
 
 export function TouchpointForm({
   initialContact,
@@ -55,8 +39,19 @@ export function TouchpointForm({
   const [state, action] = useActionState(createTouchpointAction, INITIAL);
   const [contactId, setContactId] = useState(initialContact?.id ?? "");
   const [sourceType, setSourceType] =
-    useState<(typeof TOUCHPOINT_SOURCE_TYPES)[number]>("manual");
-  const [occurredAt, setOccurredAt] = useState<string>(defaultNowLocal);
+    useState<TouchpointSourceType>("manual");
+  const [occurredAt, setOccurredAt] = useState<string>("");
+
+  // Setear el datetime por default después del mount para evitar mismatch
+  // de hydration (server y client generarían "ahora" en momentos distintos).
+  useEffect(() => {
+    if (occurredAt) return;
+    const now = new Date();
+    const tzOffsetMs = now.getTimezoneOffset() * 60 * 1000;
+    setOccurredAt(
+      new Date(now.getTime() - tzOffsetMs).toISOString().slice(0, 16),
+    );
+  }, [occurredAt]);
 
   const needsEvent = sourceType === "event";
   const needsExpo = sourceType === "expo";
