@@ -1,24 +1,18 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { buttonVariants } from "@/components/ui/button";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { formatDateTime, fullName } from "@/lib/utils";
-import { SourceBadge } from "@/components/crm/source-badge";
 import {
   SOURCE_LABELS,
   TOUCHPOINT_SOURCE_TYPES,
 } from "./nuevo/constants";
+import {
+  TouchpointsTable,
+  type TouchpointRow as Row,
+} from "./touchpoints-table";
 
 export const dynamic = "force-dynamic";
 const PAGE_SIZE = 30;
@@ -29,26 +23,6 @@ type SearchParams = {
   to?: string;
   contact?: string;
   page?: string;
-};
-
-type RowContact = {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  phone: string;
-  email: string | null;
-};
-
-type Row = {
-  id: string;
-  source_type: string;
-  source_name: string | null;
-  occurred_at: string;
-  campaign_id: string | null;
-  event_id: string | null;
-  expo_id: string | null;
-  form_id: string | null;
-  contact: RowContact | null;
 };
 
 async function getTouchpoints(params: SearchParams) {
@@ -82,13 +56,14 @@ async function getTouchpoints(params: SearchParams) {
   };
 }
 
-function contextLabel(r: Row): string {
-  const bits: string[] = [];
-  if (r.campaign_id) bits.push("Campaña");
-  if (r.event_id) bits.push("Evento");
-  if (r.expo_id) bits.push("Expo");
-  if (r.form_id) bits.push("Formulario");
-  return bits.join(" · ");
+async function getCampaignsForDialog() {
+  const admin = createSupabaseAdminClient();
+  const { data } = await admin
+    .from("campaigns")
+    .select("id, name, status")
+    .order("created_at", { ascending: false })
+    .limit(200);
+  return data ?? [];
 }
 
 export default async function TouchpointsPage({
@@ -97,7 +72,10 @@ export default async function TouchpointsPage({
   searchParams: Promise<SearchParams>;
 }) {
   const params = await searchParams;
-  const { rows, total, page, error } = await getTouchpoints(params);
+  const [{ rows, total, page, error }, campaigns] = await Promise.all([
+    getTouchpoints(params),
+    getCampaignsForDialog(),
+  ]);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
@@ -176,77 +154,17 @@ export default async function TouchpointsPage({
         </Card>
       )}
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Contacto</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Fuente</TableHead>
-                <TableHead>Contexto</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="py-10 text-center text-sm text-muted-foreground"
-                  >
-                    Sin touchpoints para estos filtros.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                rows.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="whitespace-nowrap">
-                      <Link
-                        href={`/touchpoints/${r.id}`}
-                        className="hover:text-primary hover:underline"
-                      >
-                        {formatDateTime(r.occurred_at)}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      {r.contact ? (
-                        <Link
-                          href={`/contactos/${r.contact.id}`}
-                          className="hover:text-primary hover:underline"
-                        >
-                          <span className="font-medium">
-                            {fullName(
-                              r.contact.first_name,
-                              r.contact.last_name,
-                            )}
-                          </span>
-                          <span className="ml-2 text-xs text-muted-foreground">
-                            {r.contact.phone}
-                          </span>
-                        </Link>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <SourceBadge type={r.source_type} />
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate">
-                      {r.source_name || (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {contextLabel(r) || "—"}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <TouchpointsTable
+        rows={rows}
+        totalFiltered={total}
+        filters={{
+          source_type: params.source_type,
+          from: params.from,
+          to: params.to,
+          contact: params.contact,
+        }}
+        campaigns={campaigns}
+      />
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between text-sm text-muted-foreground">

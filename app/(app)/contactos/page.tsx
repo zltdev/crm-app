@@ -1,19 +1,10 @@
 import Link from "next/link";
 import { Plus, Search } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { buttonVariants } from "@/components/ui/button";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { formatDateTime, fullName } from "@/lib/utils";
+import { ContactsTable } from "./contacts-table";
 
 export const dynamic = "force-dynamic";
 
@@ -55,19 +46,14 @@ async function getContacts({ q, page }: SearchParams) {
   };
 }
 
-function statusVariant(status: string) {
-  switch (status) {
-    case "active":
-      return "success" as const;
-    case "blocked":
-      return "warning" as const;
-    case "deleted":
-      return "destructive" as const;
-    case "merged":
-      return "secondary" as const;
-    default:
-      return "outline" as const;
-  }
+async function getCampaignsForDialog() {
+  const admin = createSupabaseAdminClient();
+  const { data } = await admin
+    .from("campaigns")
+    .select("id, name, status")
+    .order("created_at", { ascending: false })
+    .limit(200);
+  return data ?? [];
 }
 
 export default async function ContactsPage({
@@ -76,7 +62,10 @@ export default async function ContactsPage({
   searchParams: Promise<SearchParams>;
 }) {
   const params = await searchParams;
-  const { rows, total, page, error } = await getContacts(params);
+  const [{ rows, total, page, error }, campaigns] = await Promise.all([
+    getContacts(params),
+    getCampaignsForDialog(),
+  ]);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const q = params.q ?? "";
 
@@ -124,58 +113,12 @@ export default async function ContactsPage({
         </Card>
       )}
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Teléfono</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Creado</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="py-10 text-center text-sm text-muted-foreground"
-                  >
-                    {q
-                      ? `Sin resultados para "${q}".`
-                      : "Aún no hay contactos. Creá el primero."}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                rows.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-medium">
-                      <Link
-                        href={`/contactos/${r.id}`}
-                        className="hover:text-primary hover:underline"
-                      >
-                        {fullName(r.first_name, r.last_name)}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="tabular-nums">{r.phone}</TableCell>
-                    <TableCell>
-                      {r.email || <span className="text-muted-foreground">—</span>}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={statusVariant(r.status)}>{r.status}</Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDateTime(r.created_at)}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <ContactsTable
+        rows={rows}
+        totalFiltered={total}
+        filters={{ q: q || undefined }}
+        campaigns={campaigns}
+      />
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between text-sm text-muted-foreground">

@@ -27,12 +27,23 @@ import {
   CAMPAIGN_CHANNEL_LABELS,
   type CampaignChannel,
 } from "../constants";
+import {
+  DELIVERY_CHANNEL_LABELS,
+  DELIVERY_STATUS_LABELS,
+  type DeliveryChannel,
+  type DeliveryStatus,
+} from "@/lib/crm/deliveries";
 
 export const dynamic = "force-dynamic";
 
 async function getData(id: string) {
   const admin = createSupabaseAdminClient();
-  const [{ data: campaign }, { data: touchpoints, count }] = await Promise.all([
+  const [
+    { data: campaign },
+    { data: touchpoints, count: tpCount },
+    { data: deliveries, count: dlvCount },
+    statsResp,
+  ] = await Promise.all([
     admin.from("campaigns").select("*").eq("id", id).maybeSingle(),
     admin
       .from("contact_touchpoints")
@@ -44,7 +55,30 @@ async function getData(id: string) {
       .eq("campaign_id", id)
       .order("occurred_at", { ascending: false })
       .limit(30),
+    admin
+      .from("campaign_deliveries")
+      .select(
+        `id, channel, delivery_status, scheduled_at, delivered_at, opened_at, created_at,
+         contact:contacts(id, first_name, last_name, phone, email)`,
+        { count: "exact" },
+      )
+      .eq("campaign_id", id)
+      .order("created_at", { ascending: false })
+      .limit(50),
+    admin
+      .from("campaign_deliveries")
+      .select("delivery_status")
+      .eq("campaign_id", id),
   ]);
+
+  const statusCounts: Record<string, number> = {};
+  ((statsResp.data as { delivery_status: string }[] | null) ?? []).forEach(
+    (r) => {
+      statusCounts[r.delivery_status] =
+        (statusCounts[r.delivery_status] ?? 0) + 1;
+    },
+  );
+
   return {
     campaign,
     touchpoints:
@@ -60,23 +94,56 @@ async function getData(id: string) {
           phone: string;
         } | null;
       }>) ?? [],
-    touchpointsCount: count ?? 0,
+    touchpointsCount: tpCount ?? 0,
+    deliveries:
+      (deliveries as unknown as Array<{
+        id: string;
+        channel: string;
+        delivery_status: string;
+        scheduled_at: string | null;
+        delivered_at: string | null;
+        opened_at: string | null;
+        created_at: string;
+        contact: {
+          id: string;
+          first_name: string | null;
+          last_name: string | null;
+          phone: string;
+          email: string | null;
+        } | null;
+      }>) ?? [],
+    deliveriesCount: dlvCount ?? 0,
+    statusCounts,
   };
 }
 
 export default async function CampaignDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ created?: string; skipped?: string; unique?: string }>;
 }) {
   const { id } = await params;
-  const { campaign, touchpoints, touchpointsCount } = await getData(id);
+  const sp = await searchParams;
+  const {
+    campaign,
+    touchpoints,
+    touchpointsCount,
+    deliveries,
+    deliveriesCount,
+    statusCounts,
+  } = await getData(id);
   if (!campaign) notFound();
 
   const deleteAction = async () => {
     "use server";
     await deleteCampaignAction(id);
   };
+
+  const createdN = Number(sp.created ?? 0);
+  const skippedN = Number(sp.skipped ?? 0);
+  const uniqueN = Number(sp.unique ?? 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -139,6 +206,129 @@ export default async function CampaignDetailPage({
               <dd>{formatDate(campaign.end_date)}</dd>
             </div>
           </dl>
+        </CardContent>
+      </Card>
+
+      {(createdN > 0 || skippedN > 0) && (
+        <Card className="border-success/40 bg-success/5">
+          <CardContent className="py-3 text-sm">
+            Se crearon <b>{createdN.toLocaleString("es-AR")}</b> delivery
+            {createdN === 1 ? "" : "s"}
+            {skippedN > 0 && (
+              <>
+                {" "}
+                ·{" "}
+                <span className="text-muted-foreground">
+                  {skippedN.toLocaleString("es-AR")} contacto
+                  {skippedN === 1 ? "" : "s"} omitido
+                  {skippedN === 1 ? "" : "s"} (ya tenían delivery activo)
+                </span>
+              </>
+            )}
+            {uniqueN > 0 && (
+              <span className="ml-2 text-muted-foreground">
+                · Contactos únicos: {uniqueN.toLocaleString("es-AR")}
+              </span>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader className="flex-row items-center justify-between">
+          <div>
+            <CardTitle>
+              Deliveries ({deliveriesCount.toLocaleString("es-AR")})
+            </CardTitle>
+            <CardDescription>
+              Envíos planificados y su estado. Últimos 50.
+            </CardDescription>
+          </div>
+          {Object.keys(statusCounts).length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(statusCounts).map(([s, n]) => (
+                <span
+                  key={s}
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs"
+                >
+                  <StatusBadge status={s} />
+                  <span className="tabular-nums">{n}</span>
+                </span>
+              ))}
+            </div>
+          )}
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Contacto</TableHead>
+                <TableHead>Canal</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Scheduled</TableHead>
+                <TableHead>Entregado</TableHead>
+                <TableHead>Abierto</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {deliveries.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="py-8 text-center text-sm text-muted-foreground"
+                  >
+                    Aún no hay deliveries. Usá el botón &quot;Crear
+                    campaña&quot; desde /touchpoints o /contactos para
+                    agregar.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                deliveries.map((d) => (
+                  <TableRow key={d.id}>
+                    <TableCell>
+                      {d.contact ? (
+                        <Link
+                          href={`/contactos/${d.contact.id}`}
+                          className="hover:text-primary hover:underline"
+                        >
+                          {fullName(
+                            d.contact.first_name,
+                            d.contact.last_name,
+                          )}
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            {d.contact.phone}
+                          </span>
+                        </Link>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {DELIVERY_CHANNEL_LABELS[d.channel as DeliveryChannel] ??
+                        d.channel}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={d.delivery_status} />
+                      <span className="sr-only">
+                        {DELIVERY_STATUS_LABELS[
+                          d.delivery_status as DeliveryStatus
+                        ] ?? d.delivery_status}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {d.scheduled_at ? formatDateTime(d.scheduled_at) : "—"}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {d.delivered_at ? formatDateTime(d.delivered_at) : "—"}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {d.opened_at ? formatDateTime(d.opened_at) : "—"}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 
