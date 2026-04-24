@@ -34,7 +34,7 @@ const navItems: NavItem[] = [
   { href: "/expos", label: "Expos", icon: Building2 },
   { href: "/formularios", label: "Formularios", icon: ClipboardList },
   { href: "/importar", label: "Importar", icon: Upload },
-  { href: "/segmentos", label: "Segmentos", icon: Tags, disabled: true },
+  { href: "/segmentos", label: "Segmentos", icon: Tags },
 ];
 
 export function Sidebar() {

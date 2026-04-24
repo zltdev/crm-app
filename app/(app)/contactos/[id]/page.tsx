@@ -12,26 +12,36 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { formatDateTime, fullName } from "@/lib/utils";
+import { ScoreCard } from "./score-card";
 
 export const dynamic = "force-dynamic";
 
 async function getContact(id: string) {
   const supabase = createSupabaseAdminClient();
 
-  const [{ data: contact, error }, { data: touchpoints }] = await Promise.all([
-    supabase.from("contacts").select("*").eq("id", id).maybeSingle(),
-    supabase
-      .from("contact_touchpoints")
-      .select("id, source_type, source_name, occurred_at, metadata")
-      .eq("contact_id", id)
-      .order("occurred_at", { ascending: false })
-      .limit(50),
-  ]);
+  const [{ data: contact, error }, { data: touchpoints }, { data: score }] =
+    await Promise.all([
+      supabase.from("contacts").select("*").eq("id", id).maybeSingle(),
+      supabase
+        .from("contact_touchpoints")
+        .select("id, source_type, source_name, occurred_at, metadata")
+        .eq("contact_id", id)
+        .order("occurred_at", { ascending: false })
+        .limit(50),
+      supabase
+        .from("contact_scores")
+        .select(
+          "fit_score, engagement_score, intent_score, freshness_score, score_total, calculated_at, scoring_model",
+        )
+        .eq("contact_id", id)
+        .eq("is_current", true)
+        .maybeSingle(),
+    ]);
 
   if (error) throw new Error(error.message);
   if (!contact) return null;
 
-  return { contact, touchpoints: touchpoints ?? [] };
+  return { contact, touchpoints: touchpoints ?? [], score: score ?? null };
 }
 
 export default async function ContactDetailPage({
@@ -43,7 +53,7 @@ export default async function ContactDetailPage({
   const data = await getContact(id);
   if (!data) notFound();
 
-  const { contact, touchpoints } = data;
+  const { contact, touchpoints, score } = data;
 
   return (
     <div className="flex flex-col gap-6">
@@ -129,6 +139,8 @@ export default async function ContactDetailPage({
           </dl>
         </CardContent>
       </Card>
+
+      <ScoreCard contactId={contact.id} score={score} />
 
       <Card>
         <CardHeader className="flex-row items-start justify-between">

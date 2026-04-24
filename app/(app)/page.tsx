@@ -1,5 +1,12 @@
 import Link from "next/link";
-import { ArrowRight, Users, CalendarDays, Upload, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  Users,
+  CalendarDays,
+  Upload,
+  Sparkles,
+  Megaphone,
+} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -9,41 +16,60 @@ import {
 } from "@/components/ui/card";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { buttonVariants } from "@/components/ui/button";
+import { SourceBadge } from "@/components/crm/source-badge";
+import { StatusBadge } from "@/components/crm/status-badge";
+import {
+  BarChartInline,
+  type BarChartInlineItem,
+} from "@/components/crm/bar-chart-inline";
+import {
+  DELIVERY_STATUS_LABELS,
+  type DeliveryStatus,
+} from "@/lib/crm/deliveries";
 
 export const dynamic = "force-dynamic";
 
-async function getKpis() {
-  const supabase = createSupabaseAdminClient();
+type DashboardStats = {
+  contacts_total: number;
+  contacts_new_7d: number;
+  touchpoints_total: number;
+  import_batches_total: number;
+  campaigns_active: number;
+  contacts_by_week: Array<{ week: string; count: number }>;
+  touchpoints_by_type: Array<{ type: string; count: number }>;
+  top_campaigns: Array<{
+    id: string;
+    name: string;
+    count: number;
+    status: string;
+  }>;
+  deliveries_by_status: Array<{ status: string; count: number }>;
+};
 
-  const sinceWeek = new Date();
-  sinceWeek.setDate(sinceWeek.getDate() - 7);
+async function getStats(): Promise<{
+  stats: DashboardStats | null;
+  error: string | null;
+}> {
+  const admin = createSupabaseAdminClient();
+  // dashboard_stats es una RPC nueva; los types generados aún no la incluyen.
+  const rpc = admin.rpc as unknown as (
+    name: string,
+  ) => Promise<{ data: unknown; error: { message: string } | null }>;
+  const { data, error } = await rpc("dashboard_stats");
+  if (error) return { stats: null, error: error.message };
+  return { stats: data as unknown as DashboardStats, error: null };
+}
 
-  const [contacts, newThisWeek, touchpoints, importBatches] = await Promise.all([
-    supabase.from("contacts").select("*", { count: "exact", head: true }),
-    supabase
-      .from("contacts")
-      .select("*", { count: "exact", head: true })
-      .gte("created_at", sinceWeek.toISOString()),
-    supabase.from("contact_touchpoints").select("*", { count: "exact", head: true }),
-    supabase.from("import_batches").select("*", { count: "exact", head: true }),
-  ]);
-
-  return {
-    contacts: contacts.count ?? 0,
-    newThisWeek: newThisWeek.count ?? 0,
-    touchpoints: touchpoints.count ?? 0,
-    importBatches: importBatches.count ?? 0,
-    error:
-      contacts.error?.message ??
-      newThisWeek.error?.message ??
-      touchpoints.error?.message ??
-      importBatches.error?.message ??
-      null,
-  };
+function formatWeek(iso: string): string {
+  const d = new Date(iso);
+  return `sem ${d.toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "short",
+  })}`;
 }
 
 export default async function DashboardPage() {
-  const kpis = await getKpis();
+  const { stats, error } = await getStats();
 
   return (
     <div className="flex flex-col gap-8">
@@ -51,7 +77,7 @@ export default async function DashboardPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Visión general de la base unificada de contactos.
+            Visión general de la base unificada.
           </p>
         </div>
         <Link
@@ -62,81 +88,166 @@ export default async function DashboardPage() {
         </Link>
       </header>
 
-      {kpis.error && (
+      {error && (
         <Card className="border-destructive/40 bg-destructive/5">
           <CardContent className="py-4 text-sm text-destructive">
-            Error cargando KPIs: {kpis.error}
+            Error cargando stats: {error}
           </CardContent>
         </Card>
       )}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
         <KpiCard
           icon={<Users className="h-4 w-4 text-primary" />}
-          label="Contactos unificados"
-          value={kpis.contacts.toLocaleString("es-AR")}
+          label="Contactos"
+          value={stats?.contacts_total ?? 0}
           hint="Base consolidada."
         />
         <KpiCard
           icon={<Sparkles className="h-4 w-4 text-primary" />}
-          label="Nuevos esta semana"
-          value={kpis.newThisWeek.toLocaleString("es-AR")}
+          label="Nuevos 7d"
+          value={stats?.contacts_new_7d ?? 0}
           hint="Últimos 7 días."
         />
         <KpiCard
           icon={<CalendarDays className="h-4 w-4 text-primary" />}
-          label="Touchpoints registrados"
-          value={kpis.touchpoints.toLocaleString("es-AR")}
-          hint="Historial completo de interacciones."
+          label="Touchpoints"
+          value={stats?.touchpoints_total ?? 0}
+          hint="Historial completo."
+        />
+        <KpiCard
+          icon={<Megaphone className="h-4 w-4 text-primary" />}
+          label="Campañas activas"
+          value={stats?.campaigns_active ?? 0}
+          hint="Status = active."
         />
         <KpiCard
           icon={<Upload className="h-4 w-4 text-primary" />}
           label="Importaciones"
-          value={kpis.importBatches.toLocaleString("es-AR")}
-          hint="Archivos cargados al pipeline."
+          value={stats?.import_batches_total ?? 0}
+          hint="Archivos cargados."
         />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Próximos pasos</CardTitle>
-          <CardDescription>
-            Esto es V1. Las siguientes iteraciones agregan importación,
-            campañas, eventos, segmentos y scoring.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground">
-          <div className="flex items-start gap-3">
-            <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs text-primary">
-              1
-            </span>
-            <div>
-              Empezá cargando contactos en{" "}
-              <Link href="/contactos" className="text-primary underline">
-                /contactos
-              </Link>{" "}
-              — la entidad central del modelo.
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Contactos nuevos por semana</CardTitle>
+            <CardDescription>Últimas 8 semanas.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BarChartInline
+              items={(stats?.contacts_by_week ?? []).map<BarChartInlineItem>(
+                (w) => ({
+                  label: formatWeek(w.week),
+                  value: w.count,
+                }),
+              )}
+              emptyLabel="Todavía no hay contactos nuevos en las últimas 8 semanas."
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Touchpoints por tipo</CardTitle>
+            <CardDescription>Todos los registros.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-3">
+              {(stats?.touchpoints_by_type ?? []).length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Todavía no hay touchpoints.
+                </p>
+              ) : (
+                (stats?.touchpoints_by_type ?? []).map((t) => (
+                  <div key={t.type} className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <SourceBadge type={t.type} />
+                      <span className="tabular-nums text-muted-foreground">
+                        {t.count.toLocaleString("es-AR")}
+                      </span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-primary"
+                        style={{
+                          width: `${percentOf(
+                            t.count,
+                            stats?.touchpoints_by_type ?? [],
+                          )}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-xs">
-              2
-            </span>
-            <div>
-              El pipeline de importación (Excel → staging → dedupe) se habilita
-              en la siguiente iteración.
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-xs">
-              3
-            </span>
-            <div>
-              Después: campañas, eventos, expos, scoring y segmentación.
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Top campañas por deliveries</CardTitle>
+            <CardDescription>Las 5 con más envíos.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {(stats?.top_campaigns ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No hay campañas con deliveries aún.
+              </p>
+            ) : (
+              <ul className="flex flex-col gap-2 text-sm">
+                {(stats?.top_campaigns ?? []).map((c) => (
+                  <li
+                    key={c.id}
+                    className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2"
+                  >
+                    <div className="flex min-w-0 flex-col">
+                      <Link
+                        href={`/campanas/${c.id}`}
+                        className="truncate font-medium hover:text-primary hover:underline"
+                      >
+                        {c.name}
+                      </Link>
+                      <div>
+                        <StatusBadge status={c.status} />
+                      </div>
+                    </div>
+                    <span className="tabular-nums text-muted-foreground">
+                      {c.count.toLocaleString("es-AR")}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Deliveries por estado</CardTitle>
+            <CardDescription>
+              Pipeline de envíos de todas las campañas.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BarChartInline
+              items={(stats?.deliveries_by_status ?? [])
+                .sort((a, b) => b.count - a.count)
+                .map<BarChartInlineItem>((d) => ({
+                  label:
+                    DELIVERY_STATUS_LABELS[d.status as DeliveryStatus] ??
+                    d.status,
+                  value: d.count,
+                }))}
+              emptyLabel="Sin deliveries aún."
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -149,7 +260,7 @@ function KpiCard({
 }: {
   icon: React.ReactNode;
   label: string;
-  value: string;
+  value: number;
   hint: string;
 }) {
   return (
@@ -159,9 +270,19 @@ function KpiCard({
           {icon}
           {label}
         </div>
-        <div className="text-3xl font-semibold tabular-nums">{value}</div>
+        <div className="text-3xl font-semibold tabular-nums">
+          {value.toLocaleString("es-AR")}
+        </div>
         <div className="text-xs text-muted-foreground">{hint}</div>
       </CardContent>
     </Card>
   );
+}
+
+function percentOf(
+  n: number,
+  items: Array<{ count: number }>,
+): number {
+  const max = Math.max(...items.map((i) => i.count), 1);
+  return Math.max(2, Math.round((n / max) * 100));
 }
