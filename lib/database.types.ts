@@ -49,7 +49,22 @@ export type Database = {
           metadata?: Json
           started_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "agent_conversations_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_conversations_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       automation_flows: {
         Row: {
@@ -82,7 +97,15 @@ export type Database = {
           trigger_type?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "automation_flows_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       campaign_deliveries: {
         Row: {
@@ -133,7 +156,36 @@ export type Database = {
           replied_at?: string | null
           scheduled_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "campaign_deliveries_automation_flow_id_fkey"
+            columns: ["automation_flow_id"]
+            isOneToOne: false
+            referencedRelation: "automation_flows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_deliveries_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_deliveries_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_deliveries_content_piece_id_fkey"
+            columns: ["content_piece_id"]
+            isOneToOne: false
+            referencedRelation: "content_pieces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       campaigns: {
         Row: {
@@ -211,7 +263,22 @@ export type Database = {
           occurred_at?: string
           subject?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "communications_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communications_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contact_scores: {
         Row: {
@@ -253,7 +320,15 @@ export type Database = {
           score_total?: number
           scoring_model?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contact_scores_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contact_segments: {
         Row: {
@@ -280,7 +355,22 @@ export type Database = {
           metadata?: Json
           segment_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contact_segments_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_segments_segment_id_fkey"
+            columns: ["segment_id"]
+            isOneToOne: false
+            referencedRelation: "segments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contact_touchpoints: {
         Row: {
@@ -331,7 +421,64 @@ export type Database = {
           source_name?: string | null
           source_type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contact_touchpoints_agent_conversation_id_fkey"
+            columns: ["agent_conversation_id"]
+            isOneToOne: false
+            referencedRelation: "agent_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_touchpoints_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_touchpoints_communication_id_fkey"
+            columns: ["communication_id"]
+            isOneToOne: false
+            referencedRelation: "communications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_touchpoints_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_touchpoints_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_touchpoints_expo_id_fkey"
+            columns: ["expo_id"]
+            isOneToOne: false
+            referencedRelation: "expos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_touchpoints_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_touchpoints_phone_call_id_fkey"
+            columns: ["phone_call_id"]
+            isOneToOne: false
+            referencedRelation: "phone_calls"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contacts: {
         Row: {
@@ -406,7 +553,15 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "content_pieces_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       event_attendances: {
         Row: {
@@ -439,7 +594,22 @@ export type Database = {
           lead_source?: string | null
           metadata?: Json
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "event_attendances_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_attendances_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       events: {
         Row: {
@@ -481,7 +651,15 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       expo_contacts: {
         Row: {
@@ -514,7 +692,22 @@ export type Database = {
           sales_rep?: string | null
           stand?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "expo_contacts_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expo_contacts_expo_id_fkey"
+            columns: ["expo_id"]
+            isOneToOne: false
+            referencedRelation: "expos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       expos: {
         Row: {
@@ -559,7 +752,15 @@ export type Database = {
           updated_at?: string
           venue?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "expos_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       form_submissions: {
         Row: {
@@ -589,7 +790,29 @@ export type Database = {
           payload?: Json
           submitted_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "form_submissions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_submissions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_submissions_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "forms"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       forms: {
         Row: {
@@ -625,7 +848,15 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "forms_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       import_batches: {
         Row: {
@@ -688,7 +919,36 @@ export type Database = {
           status?: string
           uploaded_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "import_batches_context_campaign_id_fkey"
+            columns: ["context_campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_batches_context_event_id_fkey"
+            columns: ["context_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_batches_context_expo_id_fkey"
+            columns: ["context_expo_id"]
+            isOneToOne: false
+            referencedRelation: "expos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_batches_context_form_id_fkey"
+            columns: ["context_form_id"]
+            isOneToOne: false
+            referencedRelation: "forms"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       import_rows_normalized: {
         Row: {
@@ -742,7 +1002,29 @@ export type Database = {
           source_type?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "import_rows_normalized_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_rows_normalized_matched_contact_id_fkey"
+            columns: ["matched_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_rows_normalized_raw_row_id_fkey"
+            columns: ["raw_row_id"]
+            isOneToOne: false
+            referencedRelation: "import_rows_raw"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       import_rows_raw: {
         Row: {
@@ -766,7 +1048,15 @@ export type Database = {
           raw_payload?: Json
           row_number?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "import_rows_raw_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       phone_calls: {
         Row: {
@@ -802,7 +1092,22 @@ export type Database = {
           occurred_at?: string
           outcome?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "phone_calls_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phone_calls_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       segments: {
         Row: {

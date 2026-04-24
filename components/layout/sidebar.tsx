@@ -6,8 +6,11 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
+  Activity,
   Megaphone,
   CalendarDays,
+  Building2,
+  ClipboardList,
   Upload,
   Tags,
   LogOut,
@@ -25,9 +28,12 @@ type NavItem = {
 const navItems: NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/contactos", label: "Contactos", icon: Users },
+  { href: "/touchpoints", label: "Touchpoints", icon: Activity },
+  { href: "/campanas", label: "Campañas", icon: Megaphone },
+  { href: "/eventos", label: "Eventos", icon: CalendarDays },
+  { href: "/expos", label: "Expos", icon: Building2 },
+  { href: "/formularios", label: "Formularios", icon: ClipboardList },
   { href: "/importar", label: "Importar", icon: Upload },
-  { href: "/campanas", label: "Campañas", icon: Megaphone, disabled: true },
-  { href: "/eventos", label: "Eventos", icon: CalendarDays, disabled: true },
   { href: "/segmentos", label: "Segmentos", icon: Tags, disabled: true },
 ];
 
