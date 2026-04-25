@@ -127,30 +127,41 @@ export async function commitBatch(
       const cacheKey = `${row.phone_normalized ?? ""}|${row.email_normalized ?? ""}`;
       let contactId = contactCache.get(cacheKey) ?? null;
       let matched = false;
+      const wasCacheHit = !!contactId;
 
       if (!contactId) {
-        // Lookup contacto existente
-        const orFilters: string[] = [];
+        // Lookup contacto existente. Dos queries separadas (en vez de
+        // .or().maybeSingle() que puede devolver null si phone matchea
+        // uno y email otro distinto). Probamos primero phone (más
+        // confiable como business key).
         if (row.phone_normalized) {
-          orFilters.push(`phone_normalized.eq.${row.phone_normalized}`);
+          const { data: byPhone } = await admin
+            .from("contacts")
+            .select("id")
+            .eq("phone_normalized", row.phone_normalized)
+            .limit(1)
+            .maybeSingle();
+          if (byPhone?.id) {
+            contactId = byPhone.id;
+            matched = true;
+          }
         }
-        if (row.email_normalized) {
-          orFilters.push(`email_normalized.eq.${row.email_normalized}`);
+        if (!contactId && row.email_normalized) {
+          const { data: byEmail } = await admin
+            .from("contacts")
+            .select("id")
+            .eq("email_normalized", row.email_normalized)
+            .limit(1)
+            .maybeSingle();
+          if (byEmail?.id) {
+            contactId = byEmail.id;
+            matched = true;
+          }
         }
-        const { data: existing } = await admin
-          .from("contacts")
-          .select("id")
-          .or(orFilters.join(","))
-          .limit(1)
-          .maybeSingle();
-
-        if (existing?.id) {
-          contactId = existing.id;
-          matched = true;
-        }
-      } else {
-        matched = true;
       }
+      // Nota: si el contacto vino del cache (otro row del mismo batch),
+      // NO lo contamos como "matched" — es un duplicado interno del
+      // archivo, no un cruce con la base.
 
       if (!contactId) {
         const phoneForInsert =
@@ -171,7 +182,9 @@ export async function commitBatch(
         }
         contactId = created.id;
         stats.contactsCreated++;
-      } else if (matched) {
+      } else if (matched && !wasCacheHit) {
+        // Solo contamos como "matched" si fue un cruce real con la DB,
+        // no un duplicado dentro del mismo Excel.
         stats.contactsMatched++;
         // Completar datos faltantes sin pisar
         await admin
@@ -186,16 +199,25 @@ export async function commitBatch(
       }
       contactCache.set(cacheKey, contactId);
 
-      // Satélite
-      const satelliteId = await createSatellite(
-        admin,
-        ctx,
-        contactId,
-        row.occurred_at,
-        row.satellite,
-        row.satelliteMetadata,
-      );
-      if (satelliteId) stats.satellitesCreated++;
+      // Satélite — si falla (ej: unique violation porque ya existe la
+      // combinación contact+expo+stand), NO abortar la fila. Registramos
+      // la advertencia en metadata del touchpoint y seguimos.
+      let satelliteId: string | null = null;
+      let satelliteWarning: string | null = null;
+      try {
+        satelliteId = await createSatellite(
+          admin,
+          ctx,
+          contactId,
+          row.occurred_at,
+          row.satellite,
+          row.satelliteMetadata,
+        );
+        if (satelliteId) stats.satellitesCreated++;
+      } catch (satErr) {
+        satelliteWarning =
+          satErr instanceof Error ? satErr.message : String(satErr);
+      }
 
       // Touchpoint
       const touchpointInsert: Database["public"]["Tables"]["contact_touchpoints"]["Insert"] =
@@ -206,6 +228,9 @@ export async function commitBatch(
           occurred_at: row.occurred_at ?? new Date().toISOString(),
           metadata: {
             import_batch_id: ctx.batchId,
+            ...(satelliteWarning
+              ? { satellite_warning: satelliteWarning }
+              : {}),
             ...row.touchpointMetadata,
           } as Json,
           event_id: ctx.sourceKind === "event" ? (ctx.eventId ?? null) : null,
