@@ -4,7 +4,11 @@ import { ChevronLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { autoMapColumns } from "@/lib/import/auto-mapping";
-import type { BatchMapping, SourceKind } from "@/lib/import/types";
+import type {
+  BatchMapping,
+  RowFilter,
+  SourceKind,
+} from "@/lib/import/types";
 import { BatchWizard } from "../_components/batch-wizard";
 
 export const dynamic = "force-dynamic";
@@ -116,6 +120,7 @@ export default async function BatchPage({
             form_id: batch.context_form_id,
             campaign_id: batch.context_campaign_id,
           }}
+          rowFilter={batch.row_filter as unknown as RowFilter | null}
           options={{
             events: events.map((e) => ({
               id: e.id,

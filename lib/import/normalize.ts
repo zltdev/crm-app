@@ -9,6 +9,10 @@ export type NormalizedRow = {
   last_name: string | null;
   phone_normalized: string | null;
   email_normalized: string | null;
+  // Si el phone original era basura/inválido (length < 6, solo símbolos),
+  // dejamos marca para que el commit lo trate como sin-identificador
+  // si tampoco hay email.
+  phone_invalid_reason: string | null;
   // Touchpoint
   occurred_at: string | null;
   source_name_override: string | null;
@@ -31,6 +35,7 @@ export function normalizeRow(
     last_name: null,
     phone_normalized: null,
     email_normalized: null,
+    phone_invalid_reason: null,
     occurred_at: null,
     source_name_override: null,
     satellite: {},
@@ -87,10 +92,25 @@ export function normalizeRow(
   out.phone_normalized = normalizePhone(out.phone);
   out.email_normalized = normalizeEmail(out.email);
 
+  // Validación de phone: si el original existe pero el normalizado tiene
+  // menos de 6 dígitos, lo marcamos como inválido. El commit usará esto
+  // junto con email para decidir si la fila tiene identificador.
+  if (out.phone && out.phone_normalized) {
+    const digits = out.phone_normalized.replace(/[^0-9]/g, "");
+    if (digits.length < 6) {
+      out.phone_invalid_reason = "too_short";
+      out.phone_normalized = null;
+    }
+  } else if (out.phone && !out.phone_normalized) {
+    // El phone tenía solo símbolos o caracteres no-numéricos
+    out.phone_invalid_reason = "no_digits";
+  }
+
   return out;
 }
 
-// Multiformato: ISO, ISO con TZ, dd/mm/yyyy, mm/dd/yy hh:mm, excel serial
+// Multiformato: ISO, ISO con TZ, dd/mm/yyyy, YYYYMMDD HH:MM:SS,
+// YYYYMMDDHHMMSS, excel serial.
 function parseDate(value: unknown): string | null {
   if (value == null) return null;
   if (typeof value === "number") {
@@ -103,9 +123,55 @@ function parseDate(value: unknown): string | null {
   if (!s) return null;
 
   // ISO 8601 directo
-  const iso = new Date(s);
-  if (!Number.isNaN(iso.getTime()) && /^\d{4}-\d{2}-\d{2}/.test(s)) {
-    return iso.toISOString();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+    const iso = new Date(s);
+    if (!Number.isNaN(iso.getTime())) return iso.toISOString();
+  }
+
+  // YYYYMMDD HH:MM:SS o YYYYMMDD HH:MM (caso AOG Expo)
+  const compact = s.match(
+    /^(\d{4})(\d{2})(\d{2})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?$/,
+  );
+  if (compact) {
+    const [, y, mo, d, hh, mm, ss] = compact;
+    const date = new Date(
+      Date.UTC(
+        parseInt(y, 10),
+        parseInt(mo, 10) - 1,
+        parseInt(d, 10),
+        parseInt(hh, 10),
+        parseInt(mm, 10),
+        ss ? parseInt(ss, 10) : 0,
+      ),
+    );
+    if (!Number.isNaN(date.getTime())) return date.toISOString();
+  }
+
+  // YYYYMMDDHHMMSS (sin separador, 14 dígitos)
+  const compact14 = s.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/);
+  if (compact14) {
+    const [, y, mo, d, hh, mm, ss] = compact14;
+    const date = new Date(
+      Date.UTC(
+        parseInt(y, 10),
+        parseInt(mo, 10) - 1,
+        parseInt(d, 10),
+        parseInt(hh, 10),
+        parseInt(mm, 10),
+        parseInt(ss, 10),
+      ),
+    );
+    if (!Number.isNaN(date.getTime())) return date.toISOString();
+  }
+
+  // YYYYMMDD (sin separador, 8 dígitos, sin hora)
+  const dateOnly = s.match(/^(\d{4})(\d{2})(\d{2})$/);
+  if (dateOnly) {
+    const [, y, mo, d] = dateOnly;
+    const date = new Date(
+      Date.UTC(parseInt(y, 10), parseInt(mo, 10) - 1, parseInt(d, 10)),
+    );
+    if (!Number.isNaN(date.getTime())) return date.toISOString();
   }
 
   // dd/mm/yyyy or dd/mm/yy (opcional hora)

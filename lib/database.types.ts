@@ -872,6 +872,7 @@ export type Database = {
           processed_at: string | null
           result_stats: Json | null
           row_count: number | null
+          row_filter: Json | null
           sheet_name: string | null
           source_kind: string | null
           source_name: string
@@ -892,6 +893,7 @@ export type Database = {
           processed_at?: string | null
           result_stats?: Json | null
           row_count?: number | null
+          row_filter?: Json | null
           sheet_name?: string | null
           source_kind?: string | null
           source_name: string
@@ -912,6 +914,7 @@ export type Database = {
           processed_at?: string | null
           result_stats?: Json | null
           row_count?: number | null
+          row_filter?: Json | null
           sheet_name?: string | null
           source_kind?: string | null
           source_name?: string

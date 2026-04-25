@@ -13,6 +13,7 @@ import { commitBatch } from "@/lib/import/commit";
 import type {
   BatchMapping,
   ColumnMapping,
+  RowFilter,
   SourceKind,
 } from "@/lib/import/types";
 import { SOURCE_KINDS } from "@/lib/import/types";
@@ -146,6 +147,8 @@ export type CommitState = {
     contactsMatched: number;
     touchpointsCreated: number;
     skippedNoIdentifier: number;
+    skippedInvalidPhone: number;
+    skippedFiltered: number;
     failed: number;
   };
 };
@@ -191,6 +194,10 @@ export async function commitBatchAction(
     .eq("id", batchId);
 
   try {
+    const rowFilter = batch.row_filter
+      ? (batch.row_filter as unknown as RowFilter)
+      : null;
+
     const stats = await commitBatch(
       admin,
       {
@@ -201,6 +208,7 @@ export async function commitBatchAction(
         expoId: batch.context_expo_id,
         formId: batch.context_form_id,
         campaignId: batch.context_campaign_id,
+        rowFilter,
       },
       mapping,
     );
@@ -215,6 +223,8 @@ export async function commitBatchAction(
         contactsMatched: stats.contactsMatched,
         touchpointsCreated: stats.touchpointsCreated,
         skippedNoIdentifier: stats.skippedNoIdentifier,
+        skippedInvalidPhone: stats.skippedInvalidPhone,
+        skippedFiltered: stats.skippedFiltered,
         failed: stats.failed,
       },
     };

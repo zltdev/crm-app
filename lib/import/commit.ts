@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/lib/database.types";
-import type { ColumnMapping, SourceKind } from "./types";
+import type { ColumnMapping, RowFilter, SourceKind } from "./types";
 import { normalizeRow } from "./normalize";
 
 type Admin = SupabaseClient<Database>;
@@ -14,6 +14,7 @@ export type CommitContext = {
   expoId?: string | null;
   formId?: string | null;
   campaignId?: string | null;
+  rowFilter?: RowFilter | null;
 };
 
 export type CommitStats = {
@@ -23,9 +24,22 @@ export type CommitStats = {
   satellitesCreated: number;
   touchpointsCreated: number;
   skippedNoIdentifier: number;
+  skippedInvalidPhone: number;
+  skippedFiltered: number;
   failed: number;
   errors: string[];
 };
+
+function rowMatchesFilter(
+  payload: Record<string, unknown>,
+  filter: RowFilter | null | undefined,
+): boolean {
+  if (!filter || filter.values.length === 0) return true;
+  const raw = payload[filter.column];
+  const value = raw == null ? "" : String(raw).trim().toLowerCase();
+  const set = new Set(filter.values.map((v) => v.trim().toLowerCase()));
+  return filter.operator === "in" ? set.has(value) : !set.has(value);
+}
 
 export async function commitBatch(
   admin: Admin,
@@ -39,6 +53,8 @@ export async function commitBatch(
     satellitesCreated: 0,
     touchpointsCreated: 0,
     skippedNoIdentifier: 0,
+    skippedInvalidPhone: 0,
+    skippedFiltered: 0,
     failed: 0,
     errors: [],
   };
@@ -57,14 +73,34 @@ export async function commitBatch(
 
   for (const raw of rawRows ?? []) {
     try {
-      const row = normalizeRow(
-        (raw.raw_payload as Record<string, unknown>) ?? {},
-        mapping,
-        ctx.sourceKind,
-      );
+      const payload = (raw.raw_payload as Record<string, unknown>) ?? {};
+
+      // Filtro por columna (ej: TIPO ∈ {VISITANTE, EXPOSITOR}).
+      if (ctx.rowFilter && !rowMatchesFilter(payload, ctx.rowFilter)) {
+        stats.skippedFiltered++;
+        await admin
+          .from("import_rows_normalized")
+          .insert({
+            batch_id: ctx.batchId,
+            raw_row_id: raw.id,
+            source_type: ctx.sourceKind,
+            source_name: ctx.sourceName,
+            normalization_status: "skipped",
+            metadata: {
+              reason: "filtered_out",
+              filter_column: ctx.rowFilter.column,
+              filter_value: payload[ctx.rowFilter.column] ?? null,
+            } as Json,
+          });
+        continue;
+      }
+
+      const row = normalizeRow(payload, mapping, ctx.sourceKind);
 
       if (!row.phone_normalized && !row.email_normalized) {
-        stats.skippedNoIdentifier++;
+        const isInvalidPhone = row.phone_invalid_reason !== null;
+        if (isInvalidPhone) stats.skippedInvalidPhone++;
+        else stats.skippedNoIdentifier++;
         await admin
           .from("import_rows_normalized")
           .insert({
@@ -76,7 +112,10 @@ export async function commitBatch(
             last_name: row.last_name,
             normalization_status: "skipped",
             metadata: {
-              reason: "missing_identifier",
+              reason: isInvalidPhone
+                ? `invalid_phone_${row.phone_invalid_reason}`
+                : "missing_identifier",
+              raw_phone: row.phone,
               touchpoint: row.touchpointMetadata,
               satellite: row.satellite,
               satellite_metadata: row.satelliteMetadata,

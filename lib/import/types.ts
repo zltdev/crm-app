@@ -60,6 +60,15 @@ export type BatchMapping = {
   columns: ColumnMapping[];
 };
 
+// Filtro opcional por valor de columna del Excel.
+// Ej: { column: "TIPO", operator: "in", values: ["VISITANTE", "EXPOSITOR"] }
+// Las filas que no matcheen se marcan como skipped con reason=filtered_out.
+export type RowFilter = {
+  column: string;
+  operator: "in" | "not_in";
+  values: string[];
+};
+
 export type PreviewStats = {
   totalRows: number;
   rowsWithPhone: number;
