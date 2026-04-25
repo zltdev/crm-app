@@ -51,13 +51,22 @@ async function getStats(): Promise<{
   error: string | null;
 }> {
   const admin = createSupabaseAdminClient();
-  // dashboard_stats es una RPC nueva; los types generados aún no la incluyen.
-  const rpc = admin.rpc as unknown as (
-    name: string,
-  ) => Promise<{ data: unknown; error: { message: string } | null }>;
-  const { data, error } = await rpc("dashboard_stats");
-  if (error) return { stats: null, error: error.message };
-  return { stats: data as unknown as DashboardStats, error: null };
+  try {
+    // dashboard_stats es una RPC custom. La llamamos preservando `this`
+    // (sin desreferenciar admin.rpc en una variable, que rompe `this`).
+    const result = await (
+      admin as unknown as {
+        rpc: (
+          name: string,
+          args?: unknown,
+        ) => Promise<{ data: unknown; error: { message: string } | null }>;
+      }
+    ).rpc("dashboard_stats");
+    if (result.error) return { stats: null, error: result.error.message };
+    return { stats: result.data as DashboardStats, error: null };
+  } catch (e) {
+    return { stats: null, error: e instanceof Error ? e.message : String(e) };
+  }
 }
 
 function formatWeek(iso: string): string {

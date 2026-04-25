@@ -169,29 +169,34 @@ async function getSummariesForRows(
 ): Promise<SummaryByContact> {
   if (contactIds.length === 0) return {};
   const admin = createSupabaseAdminClient();
-  const rpc = admin.rpc as unknown as (
-    name: string,
-    args: unknown,
-  ) => Promise<{
-    data: Array<{
-      contact_id: string;
-      touchpoint_count: number;
-      source_types: string[];
-      source_count: number;
-    }> | null;
-    error: { message: string } | null;
-  }>;
-  const { data } = await rpc("contacts_touchpoint_summary", {
-    contact_ids: contactIds,
-  });
-  const out: SummaryByContact = {};
-  for (const r of data ?? []) {
-    out[r.contact_id] = {
-      count: r.touchpoint_count,
-      sources: r.source_types ?? [],
-    };
+  try {
+    const result = await (
+      admin as unknown as {
+        rpc: (
+          name: string,
+          args?: unknown,
+        ) => Promise<{
+          data: Array<{
+            contact_id: string;
+            touchpoint_count: number;
+            source_types: string[];
+            source_count: number;
+          }> | null;
+          error: { message: string } | null;
+        }>;
+      }
+    ).rpc("contacts_touchpoint_summary", { contact_ids: contactIds });
+    const out: SummaryByContact = {};
+    for (const r of result.data ?? []) {
+      out[r.contact_id] = {
+        count: r.touchpoint_count,
+        sources: r.source_types ?? [],
+      };
+    }
+    return out;
+  } catch {
+    return {};
   }
-  return out;
 }
 
 async function getCampaignsForDialog() {

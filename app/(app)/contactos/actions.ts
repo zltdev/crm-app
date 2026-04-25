@@ -115,14 +115,25 @@ export async function recalculateAllScoresAction(): Promise<{
   error?: string;
 }> {
   const supabase = createSupabaseAdminClient();
-  const rpc = supabase.rpc as unknown as (
-    name: string,
-  ) => Promise<{ data: unknown; error: { message: string } | null }>;
-  const { data, error } = await rpc("recalculate_all_scores");
-  if (error) return { ok: false, error: error.message };
-  revalidatePath("/contactos");
-  revalidatePath("/");
-  return { ok: true, affected: typeof data === "number" ? data : 0 };
+  try {
+    const result = await (
+      supabase as unknown as {
+        rpc: (
+          name: string,
+          args?: unknown,
+        ) => Promise<{ data: unknown; error: { message: string } | null }>;
+      }
+    ).rpc("recalculate_all_scores");
+    if (result.error) return { ok: false, error: result.error.message };
+    revalidatePath("/contactos");
+    revalidatePath("/");
+    return {
+      ok: true,
+      affected: typeof result.data === "number" ? result.data : 0,
+    };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
 }
 
 export async function archiveContact(id: string) {
