@@ -124,44 +124,31 @@ export async function commitBatch(
         continue;
       }
 
-      const cacheKey = `${row.phone_normalized ?? ""}|${row.email_normalized ?? ""}`;
-      let contactId = contactCache.get(cacheKey) ?? null;
+      // Match SOLO por phone_normalized. El teléfono es la business key
+      // por convención: siempre se pide, y dos contactos con el mismo
+      // teléfono se consideran la misma persona. El email puede
+      // repetirse entre contactos (familias, casillas compartidas), por
+      // lo que NO se usa como criterio de match.
+      const cacheKey = row.phone_normalized ?? "";
+      let contactId = cacheKey ? (contactCache.get(cacheKey) ?? null) : null;
       let matched = false;
       const wasCacheHit = !!contactId;
 
-      if (!contactId) {
-        // Lookup contacto existente. Dos queries separadas (en vez de
-        // .or().maybeSingle() que puede devolver null si phone matchea
-        // uno y email otro distinto). Probamos primero phone (más
-        // confiable como business key).
-        if (row.phone_normalized) {
-          const { data: byPhone } = await admin
-            .from("contacts")
-            .select("id")
-            .eq("phone_normalized", row.phone_normalized)
-            .limit(1)
-            .maybeSingle();
-          if (byPhone?.id) {
-            contactId = byPhone.id;
-            matched = true;
-          }
-        }
-        if (!contactId && row.email_normalized) {
-          const { data: byEmail } = await admin
-            .from("contacts")
-            .select("id")
-            .eq("email_normalized", row.email_normalized)
-            .limit(1)
-            .maybeSingle();
-          if (byEmail?.id) {
-            contactId = byEmail.id;
-            matched = true;
-          }
+      if (!contactId && row.phone_normalized) {
+        const { data: byPhone } = await admin
+          .from("contacts")
+          .select("id")
+          .eq("phone_normalized", row.phone_normalized)
+          .limit(1)
+          .maybeSingle();
+        if (byPhone?.id) {
+          contactId = byPhone.id;
+          matched = true;
         }
       }
-      // Nota: si el contacto vino del cache (otro row del mismo batch),
-      // NO lo contamos como "matched" — es un duplicado interno del
-      // archivo, no un cruce con la base.
+      // Si la fila no tiene phone_normalized, no matcheamos por email —
+      // se crea un contacto nuevo. El skip por "sin identificador" ya
+      // ocurre antes (filas sin phone ni email caen como skipped).
 
       if (!contactId) {
         const phoneForInsert =
