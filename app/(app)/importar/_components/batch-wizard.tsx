@@ -48,6 +48,14 @@ type Options = {
   campaigns: { id: string; label: string }[];
 };
 
+type ContactRef = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string;
+  email: string | null;
+};
+
 type Props = {
   batchId: string;
   sourceKind: SourceKind;
@@ -64,6 +72,8 @@ type Props = {
   options: Options;
   resultStats: unknown;
   rowFilter: RowFilter | null;
+  matchedContacts: ContactRef[];
+  createdContacts: ContactRef[];
 };
 
 type BatchStats = {

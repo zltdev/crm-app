@@ -28,6 +28,62 @@ async function getBatchData(batchId: string) {
 
   if (!batch) return null;
 
+  // Si ya está importado, traer contactos matcheados (los que ya existían)
+  // y los recién creados, para mostrarlos en la ficha del batch.
+  const isImported = batch.status === "imported";
+  type ContactRef = {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    phone: string;
+    email: string | null;
+  };
+  const matchedContacts: ContactRef[] = [];
+  const createdContacts: ContactRef[] = [];
+
+  if (isImported) {
+    // matched: contactos que ya existían antes del batch
+    const { data: matchedRows } = await admin
+      .from("import_rows_normalized")
+      .select(
+        "matched_contact_id, contact:contacts!import_rows_normalized_matched_contact_id_fkey(id, first_name, last_name, phone, email)",
+      )
+      .eq("batch_id", batchId)
+      .eq("normalization_status", "matched")
+      .not("matched_contact_id", "is", null)
+      .order("created_at", { ascending: true });
+
+    const seen = new Set<string>();
+    for (const r of matchedRows ?? []) {
+      const c = (r as unknown as { contact: typeof matchedContacts[number] | null }).contact;
+      if (c?.id && !seen.has(c.id)) {
+        seen.add(c.id);
+        matchedContacts.push(c);
+      }
+    }
+
+    // imported: contactos nuevos (creados por este batch)
+    const { data: createdRows } = await admin
+      .from("import_rows_normalized")
+      .select(
+        "matched_contact_id, contact:contacts!import_rows_normalized_matched_contact_id_fkey(id, first_name, last_name, phone, email)",
+      )
+      .eq("batch_id", batchId)
+      .eq("normalization_status", "imported")
+      .not("matched_contact_id", "is", null)
+      .order("created_at", { ascending: true })
+      .limit(200);
+
+    const seen2 = new Set<string>();
+    for (const r of createdRows ?? []) {
+      const c = (r as unknown as { contact: typeof createdContacts[number] | null }).contact;
+      if (c?.id && !seen2.has(c.id)) {
+        seen2.add(c.id);
+        createdContacts.push(c);
+      }
+    }
+  }
+
   const [
     { data: events },
     { data: expos },
@@ -58,6 +114,8 @@ async function getBatchData(batchId: string) {
     expos: expos ?? [],
     forms: forms ?? [],
     campaigns: campaigns ?? [],
+    matchedContacts,
+    createdContacts,
   };
 }
 
@@ -69,7 +127,16 @@ export default async function BatchPage({
   const { id } = await params;
   const data = await getBatchData(id);
   if (!data) notFound();
-  const { batch, sampleRows, events, expos, forms, campaigns } = data;
+  const {
+    batch,
+    sampleRows,
+    events,
+    expos,
+    forms,
+    campaigns,
+    matchedContacts,
+    createdContacts,
+  } = data;
 
   const headers =
     sampleRows.length > 0 ? Object.keys(sampleRows[0]) : [];
@@ -121,6 +188,8 @@ export default async function BatchPage({
             campaign_id: batch.context_campaign_id,
           }}
           rowFilter={batch.row_filter as unknown as RowFilter | null}
+          matchedContacts={matchedContacts}
+          createdContacts={createdContacts}
           options={{
             events: events.map((e) => ({
               id: e.id,

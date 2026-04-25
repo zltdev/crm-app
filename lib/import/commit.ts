@@ -235,8 +235,9 @@ export async function commitBatch(
           normalized_email: row.email_normalized,
           occurred_at: row.occurred_at,
           matched_contact_id: contactId,
-          normalization_status: "imported",
+          normalization_status: matched ? "matched" : "imported",
           metadata: {
+            was_matched: matched,
             satellite: row.satellite,
             satellite_metadata: row.satelliteMetadata,
             touchpoint: row.touchpointMetadata,
