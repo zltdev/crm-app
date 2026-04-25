@@ -23,14 +23,55 @@ type SearchParams = {
   to?: string;
   contact?: string;
   page?: string;
+  min_sources?: string;
 };
+
+async function resolveQualifyingContactIds(
+  minSources: number,
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+): Promise<string[] | null> {
+  if (minSources < 2) return null;
+  const { data } = await admin
+    .from("contact_touchpoints")
+    .select("contact_id, source_type")
+    .limit(50000);
+  const map = new Map<string, Set<string>>();
+  for (const r of data ?? []) {
+    if (!r.contact_id) continue;
+    const cur = map.get(r.contact_id) ?? new Set<string>();
+    cur.add(r.source_type);
+    map.set(r.contact_id, cur);
+  }
+  const ids: string[] = [];
+  map.forEach((sources, id) => {
+    if (sources.size >= minSources) ids.push(id);
+  });
+  return ids;
+}
 
 async function getTouchpoints(params: SearchParams) {
   const pageNum = Math.max(1, Number(params.page ?? 1));
+  const minSources = Math.max(0, Number(params.min_sources ?? 0));
   const from = (pageNum - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
   const admin = createSupabaseAdminClient();
+
+  // Resolver contact_ids cualificantes si hay filtro min_sources.
+  const qualifyingContactIds = await resolveQualifyingContactIds(
+    minSources,
+    admin,
+  );
+
+  if (qualifyingContactIds !== null && qualifyingContactIds.length === 0) {
+    return {
+      rows: [] as Row[],
+      total: 0,
+      page: pageNum,
+      error: null,
+    };
+  }
+
   let q = admin
     .from("contact_touchpoints")
     .select(
@@ -46,6 +87,9 @@ async function getTouchpoints(params: SearchParams) {
   if (params.from) q = q.gte("occurred_at", params.from);
   if (params.to) q = q.lte("occurred_at", params.to);
   if (params.contact) q = q.eq("contact_id", params.contact);
+  if (qualifyingContactIds !== null) {
+    q = q.in("contact_id", qualifyingContactIds);
+  }
 
   const { data, count, error } = await q;
   return {
@@ -99,7 +143,7 @@ export default async function TouchpointsPage({
 
       <Card>
         <CardContent className="py-4">
-          <form method="get" className="grid grid-cols-1 gap-3 md:grid-cols-4">
+          <form method="get" className="grid grid-cols-1 gap-3 md:grid-cols-5">
             <div className="flex flex-col gap-1">
               <label className="text-xs text-muted-foreground">Tipo</label>
               <Select name="source_type" defaultValue={params.source_type ?? ""}>
@@ -123,6 +167,21 @@ export default async function TouchpointsPage({
               <label className="text-xs text-muted-foreground">Hasta</label>
               <Input type="date" name="to" defaultValue={params.to ?? ""} />
             </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-muted-foreground">
+                Contactos con
+              </label>
+              <Select
+                name="min_sources"
+                defaultValue={params.min_sources ?? "0"}
+                title="Filtrar para mostrar solo touchpoints de contactos que aparecen en N o más fuentes distintas (cruzados)."
+              >
+                <option value="0">Cualquiera</option>
+                <option value="2">2+ fuentes (cruzados)</option>
+                <option value="3">3+ fuentes</option>
+                <option value="4">4+ fuentes</option>
+              </Select>
+            </div>
             <div className="flex items-end gap-2">
               <button
                 type="submit"
@@ -130,7 +189,11 @@ export default async function TouchpointsPage({
               >
                 Filtrar
               </button>
-              {(params.source_type || params.from || params.to || params.contact) && (
+              {(params.source_type ||
+                params.from ||
+                params.to ||
+                params.contact ||
+                params.min_sources) && (
                 <Link
                   href="/touchpoints"
                   className={buttonVariants({ variant: "ghost" })}

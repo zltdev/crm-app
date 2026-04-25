@@ -50,11 +50,13 @@ export function ContactsTable({
   totalFiltered,
   filters,
   campaigns,
+  summaries = {},
 }: {
   rows: ContactRow[];
   totalFiltered: number;
   filters: { q?: string };
   campaigns: { id: string; name: string; status: string }[];
+  summaries?: Record<string, { count: number; sources: string[] }>;
 }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [allMatching, setAllMatching] = useState(false);
@@ -129,15 +131,16 @@ export function ContactsTable({
                 <TableHead>Nombre</TableHead>
                 <TableHead>Teléfono</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>TP</TableHead>
+                <TableHead>Fuentes</TableHead>
                 <TableHead>Estado</TableHead>
-                <TableHead>Creado</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={7}
                     className="py-10 text-center text-sm text-muted-foreground"
                   >
                     {filters.q
@@ -169,13 +172,32 @@ export function ContactsTable({
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
+                    <TableCell className="tabular-nums">
+                      {summaries[r.id]?.count ?? 0}
+                    </TableCell>
+                    <TableCell>
+                      {(summaries[r.id]?.sources ?? []).length === 0 ? (
+                        <span className="text-muted-foreground text-xs">
+                          —
+                        </span>
+                      ) : (
+                        <div className="flex flex-wrap gap-1">
+                          {summaries[r.id]!.sources.map((s) => (
+                            <Badge
+                              key={s}
+                              variant="secondary"
+                              className="text-[10px]"
+                            >
+                              {s}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge variant={statusVariant(r.status)}>
                         {r.status}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDateTime(r.created_at)}
                     </TableCell>
                   </TableRow>
                 ))

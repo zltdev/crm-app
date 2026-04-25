@@ -109,6 +109,22 @@ export async function updateContact(
   redirect(`/contactos/${id}`);
 }
 
+export async function recalculateAllScoresAction(): Promise<{
+  ok: boolean;
+  affected?: number;
+  error?: string;
+}> {
+  const supabase = createSupabaseAdminClient();
+  const rpc = supabase.rpc as unknown as (
+    name: string,
+  ) => Promise<{ data: unknown; error: { message: string } | null }>;
+  const { data, error } = await rpc("recalculate_all_scores");
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/contactos");
+  revalidatePath("/");
+  return { ok: true, affected: typeof data === "number" ? data : 0 };
+}
+
 export async function archiveContact(id: string) {
   const allowed = CONTACT_STATUSES.includes("deleted")
     ? "deleted"
