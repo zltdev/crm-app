@@ -2,9 +2,14 @@ import type { Json } from "@/lib/database.types";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 /**
- * Reglas de scoring V1 — hardcoded pero explicadas.
+ * Reglas de scoring v2.
  *
- * Todos los scores van de 0 a 100. score_total es un promedio ponderado.
+ * Cambios respecto a v1: Engagement e Intent ahora son "stock" (acumulan
+ * sin ventana), Freshness es la única métrica que decae con el tiempo.
+ *
+ * Justificación: con datos importados de eventos/expos viejos, una ventana
+ * de 90/30 días dejaba todo en 0. El "cuánto interactuó este contacto" es
+ * contexto que no expira; la actualidad la expresa Freshness.
  */
 
 const HOT_TYPES = new Set(["event", "expo", "phone_call", "form"]);
@@ -17,7 +22,7 @@ const WEIGHTS = {
   freshness: 0.2,
 };
 
-const MODEL_VERSION = "v1";
+const MODEL_VERSION = "v2";
 
 export type ScoreBreakdown = {
   fit: number;
@@ -27,13 +32,14 @@ export type ScoreBreakdown = {
   total: number;
   meta: {
     model: string;
-    touchpoints_90d: number;
-    hot_touchpoints_30d: number;
+    total_touchpoints: number;
+    hot_touchpoints: number;
     days_since_last_touchpoint: number | null;
   };
 };
 
 function engagementFromCount(count: number): number {
+  // total de touchpoints (sin ventana)
   if (count <= 0) return 0;
   if (count === 1) return 20;
   if (count <= 4) return 45;
@@ -42,6 +48,7 @@ function engagementFromCount(count: number): number {
 }
 
 function intentFromCount(count: number): number {
+  // total de hot touchpoints (sin ventana)
   if (count <= 0) return 0;
   if (count === 1) return 35;
   if (count === 2) return 60;
@@ -52,10 +59,11 @@ function intentFromCount(count: number): number {
 function freshnessFromDays(days: number | null): number {
   if (days === null) return 0;
   if (days <= 7) return 100;
-  if (days <= 30) return 70;
-  if (days <= 90) return 40;
-  if (days <= 180) return 15;
-  return 0;
+  if (days <= 30) return 80;
+  if (days <= 90) return 60;
+  if (days <= 180) return 40;
+  if (days <= 365) return 20;
+  return 5;
 }
 
 export async function calculateScoreForContact(
@@ -63,37 +71,33 @@ export async function calculateScoreForContact(
 ): Promise<ScoreBreakdown> {
   const admin = createSupabaseAdminClient();
   const now = Date.now();
-  const since90 = new Date(now - 90 * 24 * 60 * 60 * 1000).toISOString();
 
   const { data: tps, error } = await admin
     .from("contact_touchpoints")
     .select("source_type, occurred_at")
     .eq("contact_id", contactId)
-    .gte("occurred_at", since90)
     .order("occurred_at", { ascending: false })
     .limit(500);
 
   if (error) throw new Error(error.message);
 
   const rows = tps ?? [];
-  const count90 = rows.length;
-  const since30ms = now - 30 * 24 * 60 * 60 * 1000;
-  const hotCount30 = rows.filter(
-    (t) =>
-      HOT_TYPES.has(t.source_type) &&
-      new Date(t.occurred_at).getTime() >= since30ms,
-  ).length;
+  const totalCount = rows.length;
+  const hotCount = rows.filter((t) => HOT_TYPES.has(t.source_type)).length;
 
   let daysSinceLast: number | null = null;
   if (rows.length > 0) {
     const latest = new Date(rows[0].occurred_at).getTime();
-    daysSinceLast = Math.max(0, Math.floor((now - latest) / (1000 * 60 * 60 * 24)));
+    daysSinceLast = Math.max(
+      0,
+      Math.floor((now - latest) / (1000 * 60 * 60 * 24)),
+    );
   }
 
-  // fit placeholder — en V2 se alimenta de datos firmográficos / empresa / proyecto
+  // fit placeholder — se alimenta cuando agreguemos campos firmográficos
   const fit = 50;
-  const engagement = engagementFromCount(count90);
-  const intent = intentFromCount(hotCount30);
+  const engagement = engagementFromCount(totalCount);
+  const intent = intentFromCount(hotCount);
   const freshness = freshnessFromDays(daysSinceLast);
 
   const total =
@@ -110,8 +114,8 @@ export async function calculateScoreForContact(
     total: round(total),
     meta: {
       model: MODEL_VERSION,
-      touchpoints_90d: count90,
-      hot_touchpoints_30d: hotCount30,
+      total_touchpoints: totalCount,
+      hot_touchpoints: hotCount,
       days_since_last_touchpoint: daysSinceLast,
     },
   };
