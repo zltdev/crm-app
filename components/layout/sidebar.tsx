@@ -14,6 +14,7 @@ import {
   Upload,
   Tags,
   LogOut,
+  Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/app/login/actions";
@@ -27,6 +28,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/leads", label: "Leads", icon: Target },
   { href: "/contactos", label: "Contactos", icon: Users },
   { href: "/touchpoints", label: "Touchpoints", icon: Activity },
   { href: "/campanas", label: "Campañas", icon: Megaphone },
