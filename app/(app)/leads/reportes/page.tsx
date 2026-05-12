@@ -35,6 +35,7 @@ import {
 } from "@/components/crm/bar-chart-inline";
 import { LEAD_STATUS_LABELS, type LeadStatus } from "@/lib/crm/leads";
 import { MonthFilter } from "@/components/crm/month-filter";
+import { ExportPdfButton, type ReportPdfData } from "./export-pdf";
 
 export const dynamic = "force-dynamic";
 
@@ -251,6 +252,14 @@ export default async function LeadsReportesPage({
   const matrixMap = new Map<string, MatrixRow>();
   for (const r of matrix) matrixMap.set(`${r.project}::${r.month}`, r);
 
+  const pdfData: ReportPdfData = {
+    selectedMonths,
+    meta,
+    funnel,
+    brokerData,
+    stats,
+  };
+
   return (
     <div className="flex flex-col gap-8">
       {/* Header */}
@@ -261,7 +270,7 @@ export default async function LeadsReportesPage({
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-semibold tracking-tight">
             Dashboard de Leads
           </h1>
@@ -270,6 +279,7 @@ export default async function LeadsReportesPage({
             Seguimiento
           </p>
         </div>
+        <ExportPdfButton data={pdfData} />
       </header>
 
       {/* Month filter */}
