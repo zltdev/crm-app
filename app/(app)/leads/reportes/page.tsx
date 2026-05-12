@@ -985,11 +985,19 @@ export default async function LeadsReportesPage({
                               {bm && bm.total > 0 ? (
                                 <div className="flex flex-col items-center">
                                   <span>{bm.total}</span>
-                                  {bm.sin_feedback > 0 && (
-                                    <span className="text-[10px] text-muted-foreground">
-                                      {bm.sin_feedback} s/f
-                                    </span>
-                                  )}
+                                  {bm.sin_feedback > 0 && (() => {
+                                    const ratio = bm.sin_feedback / bm.total;
+                                    // Hue: 120 (green) → 0 (red) as ratio grows
+                                    const hue = Math.round(120 * (1 - ratio));
+                                    return (
+                                      <span
+                                        className="text-[10px] font-medium"
+                                        style={{ color: `hsl(${hue}, 75%, 40%)` }}
+                                      >
+                                        {bm.sin_feedback} s/f
+                                      </span>
+                                    );
+                                  })()}
                                 </div>
                               ) : (
                                 <span className="text-muted-foreground">—</span>
