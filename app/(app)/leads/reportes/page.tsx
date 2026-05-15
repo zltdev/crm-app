@@ -524,7 +524,7 @@ export default async function LeadsReportesPage({
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Embudo de conversi&oacute;n</CardTitle>
             <CardDescription>
-              Mensajes Ads &rarr; Contactos &rarr; Derivados &rarr; Vendidos
+              Msgs Ads &rarr; Contactos (Agente) &rarr; Leads &rarr; Derivados &rarr; Vendidos
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -536,12 +536,12 @@ export default async function LeadsReportesPage({
                   color: "bg-blue-500",
                 },
                 {
-                  label: "Contactos (Leads)",
+                  label: "Contactos (Agente)",
                   value: ft.contactos,
                   color: "bg-purple-500",
                 },
                 {
-                  label: "Calificados",
+                  label: "Leads",
                   value: ft.leads_calificados,
                   color: "bg-indigo-500",
                 },
@@ -584,7 +584,7 @@ export default async function LeadsReportesPage({
                     <TableHead className="text-right">Inversi&oacute;n</TableHead>
                     <TableHead className="text-right">Msgs Ads</TableHead>
                     <TableHead className="text-right">Contactos</TableHead>
-                    <TableHead className="text-right">Calificados</TableHead>
+                    <TableHead className="text-right">Leads</TableHead>
                     <TableHead className="text-right">Derivados</TableHead>
                     <TableHead className="text-right">Negociaci&oacute;n</TableHead>
                     <TableHead className="text-right">Vendidos</TableHead>

@@ -307,8 +307,8 @@ async function generatePdf(data: ReportPdfData) {
 
   // Funnel KPIs
   const funnelKpis = [
-    ["Contactos", fmtNum(ft.contactos)],
-    ["Calificados", fmtNum(ft.leads_calificados)],
+    ["Contactos (Agente)", fmtNum(ft.contactos)],
+    ["Leads", fmtNum(ft.leads_calificados)],
     ["Derivados", fmtNum(ft.derivados)],
     ["En negociación", fmtNum(ft.en_negociacion)],
     ["Vendidos", fmtNum(ft.vendidos)],
@@ -334,8 +334,8 @@ async function generatePdf(data: ReportPdfData) {
   // Funnel visual (simple horizontal bars)
   const funnelSteps = [
     { label: "Mensajes Ads", value: ft.mensajes_ads, color: medBlue },
-    { label: "Contactos", value: ft.contactos, color: [147, 51, 234] as [number, number, number] },
-    { label: "Calificados", value: ft.leads_calificados, color: [99, 102, 241] as [number, number, number] },
+    { label: "Contactos (Agente)", value: ft.contactos, color: [147, 51, 234] as [number, number, number] },
+    { label: "Leads", value: ft.leads_calificados, color: [99, 102, 241] as [number, number, number] },
     { label: "Derivados", value: ft.derivados, color: [6, 182, 212] as [number, number, number] },
     { label: "En negociación", value: ft.en_negociacion, color: [245, 158, 11] as [number, number, number] },
     { label: "Vendidos", value: ft.vendidos, color: [34, 197, 94] as [number, number, number] },
@@ -372,7 +372,7 @@ async function generatePdf(data: ReportPdfData) {
     autoTable(doc, {
       startY: y,
       margin: { left: marginL, right: marginR },
-      head: [["Mes", "Inversión", "Msgs Ads", "Contactos", "Calificados", "Derivados", "Negociación", "Vendidos", "$/Lead", "$/Derivado"]],
+      head: [["Mes", "Inversión", "Msgs Ads", "Contactos", "Leads", "Derivados", "Negociación", "Vendidos", "$/Lead", "$/Derivado"]],
       body: [
         ...funnel.by_month.map((r) => [
           fmtMonthShort(r.month),
